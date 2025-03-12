@@ -5,7 +5,7 @@
 ![Chrome](https://img.shields.io/badge/chrome-compatible-brightgreen.svg)
 
 <p align="center">
-  <img src="tech_detector_pro/icons/icon128.png" alt="Tech Detector Pro Logo">
+  <img src="tech_detector_pro/icons/icon48.png" alt="Tech Detector Pro Logo">
 </p>
 
 Tech Detector Pro è un'estensione per Google Chrome che analizza e identifica in tempo reale le tecnologie utilizzate dai siti web che stai visitando. Ottieni informazioni dettagliate su web server, framework, librerie, database e molto altro con un solo clic!
