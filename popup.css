@@ -68,3 +68,12 @@ main { max-height: 470px; overflow-y: auto; }
   border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 8px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .footer { font-size: 10px; color: var(--muted); text-align: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.php-box { background: var(--card); border-radius: 8px; padding: 9px 10px; }
+.php-head { display: flex; align-items: center; gap: 8px; }
+.php-ver { font: 600 18px ui-monospace, Consolas, monospace; }
+.conf { font-size: 10px; padding: 1px 7px; border-radius: 9px; font-weight: 600; }
+.conf.ok { background: var(--ok-bg); color: var(--ok); } .conf.warn { background: #fef3c7; color: #92400e; } .conf.ko { background: var(--ko-bg); color: var(--ko); }
+.php-box .d { color: var(--muted); font-size: 11px; margin-top: 3px; }
+.evidence { margin: 6px 0; padding-left: 16px; font-size: 11px; color: var(--muted); }
+.btn { margin-top: 4px; border: 1px solid var(--accent); background: none; color: var(--accent); border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 12px; }
+.btn:disabled { opacity: .6; cursor: default; }
