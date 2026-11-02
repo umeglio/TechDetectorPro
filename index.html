@@ -11,7 +11,7 @@
   <meta name="description" content="Estensione Chrome/Edge: tecnologie di un sito, versioni del server (Apache, nginx, PHP, OpenSSL), voto di sicurezza e componenti vulnerabili (CVE). Analisi locale, zero dipendenze.">
   <meta property="og:title" content="Tech Detector Pro">
   <meta property="og:description" content="Con che cosa è costruito un sito, quale software gira sul server e cosa va aggiornato. In un clic, nel browser.">
-  <meta property="og:image" content="https://umeglio.github.io/TechDetectorPro/screenshots/security-tab.png">
+  <meta property="og:image" content="https://umeglio.github.io/TechDetectorPro/screenshots/en/security-tab.png">
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
   <style>
     /* miraFONT (CC0, https://umeglio.github.io/miraFONT/) - Spline per i testi, Linear per il codice */
@@ -104,6 +104,9 @@
     .pill.c { background: var(--accent-soft); color: var(--accent); } .pill.s { background: rgba(245,158,11,.14); color: #f5a524; }
     .pill.m { background: rgba(125,211,252,.14); color: var(--accent-2); }
 
+    .langs { display: flex; flex-wrap: wrap; gap: 10px; }
+    .langs span { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; font-size: 15px; }
+    .langs span:hover { border-color: var(--accent); box-shadow: var(--glow); }
     .alert { border-left: 5px solid var(--crit); background: var(--surface); border-radius: 10px; padding: 18px 20px;
       border-top: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
     .alert h3 { margin: 0 0 6px; }
@@ -132,6 +135,7 @@
     <b>Tech Detector Pro</b>
     <nav>
       <a class="hide-sm" href="#funzioni"><span class="it">Funzioni</span><span class="en">Features</span></a>
+      <a class="hide-sm" href="#lingue"><span class="it">Lingue</span><span class="en">Languages</span></a>
       <a class="hide-sm" href="#php">PHP</a>
       <a class="hide-sm" href="#strumenti"><span class="it">Strumenti</span><span class="en">Tools</span></a>
       <a href="https://github.com/umeglio/TechDetectorPro">GitHub</a>
@@ -150,9 +154,9 @@
           <a class="btn primary" href="https://github.com/umeglio/TechDetectorPro/archive/refs/heads/main.zip"><span class="it">Scarica (ZIP)</span><span class="en">Download (ZIP)</span></a>
           <a class="btn ghost" href="#installazione"><span class="it">Come si installa</span><span class="en">How to install</span></a>
         </div>
-        <div class="badges"><span>v2.2.1</span><span>Manifest V3</span><span>Chrome / Edge 116+</span><span class="it">zero dipendenze</span><span class="en">zero dependencies</span><span>MIT</span></div>
+        <div class="badges"><span>v2.3.0</span><span class="it">12 lingue</span><span class="en">12 languages</span><span>Manifest V3</span><span>Chrome / Edge 116+</span><span class="it">zero dipendenze</span><span class="en">zero dependencies</span><span>MIT</span></div>
       </div>
-      <div class="shot"><img src="screenshots/security-tab.png" alt="Scheda Sicurezza: componenti da aggiornare con CVE" width="484" height="640"></div>
+      <div class="shot"><img id="hero-shot" src="screenshots/it/security-tab.png" alt="Scheda Sicurezza: componenti da aggiornare con CVE" width="484" height="640"></div>
     </div>
 
     <section id="funzioni">
@@ -191,8 +195,20 @@
           <button role="tab" aria-selected="false" data-i="3">Header</button>
         </div>
         <div class="gallery">
-          <img id="gimg" src="screenshots/tech-tab.png" alt="" width="484" height="640">
+          <img id="gimg" src="screenshots/it/tech-tab.png" alt="" width="484" height="640">
           <div class="caption" id="gcap"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="lingue">
+      <div class="wrap">
+        <h2 class="it">Parla la tua lingua</h2><h2 class="en">Speaks your language</h2>
+        <p class="sub it">L'interfaccia è tradotta nelle 12 lingue più parlate al mondo. Segue la lingua del browser e si cambia con un clic dal popup; l'arabo si legge da destra a sinistra.</p>
+        <p class="sub en">The interface is translated into the 12 most widely spoken languages. It follows the browser language and can be switched from the popup in one click; Arabic is shown right-to-left.</p>
+        <div class="langs">
+          <span>English</span><span>中文</span><span>हिन्दी</span><span>Español</span><span>Français</span><span dir="rtl">العربية</span>
+          <span>বাংলা</span><span>Português</span><span>Русский</span><span>日本語</span><span>Deutsch</span><span>Italiano</span>
         </div>
       </div>
     </section>
@@ -302,16 +318,16 @@ sudo ./tools/php-vuln-check.sh --csv &gt; inventario.csv</code></pre>
     (function () {
       'use strict';
       var SHOTS = [
-        { src: 'screenshots/tech-tab.png',
+        { src: 'tech-tab.png',
           it: ['Tecnologie', 'Ogni tecnologia con la sua versione e la fonte del rilevamento. Quelle da aggiornare sono marcate in rosso.'],
           en: ['Technologies', 'Every technology with its version and detection source. Outdated ones are flagged in red.'] },
-        { src: 'screenshots/server-tab.png',
+        { src: 'server-tab.png',
           it: ['Server', 'IP, protocollo, software del server, distribuzione stimata, cache, tempi di risposta, cookie e versione di PHP.'],
           en: ['Server', 'IP, protocol, server software, estimated distribution, cache, timings, cookies and PHP version.'] },
-        { src: 'screenshots/security-tab.png',
+        { src: 'security-tab.png',
           it: ['Sicurezza', 'Componenti vulnerabili con gravità e CVE, poi il voto A–F sugli header di sicurezza con il dettaglio di ogni controllo.'],
           en: ['Security', 'Vulnerable components with severity and CVEs, then the A–F grade on security headers with per-check details.'] },
-        { src: 'screenshots/headers-tab.png',
+        { src: 'headers-tab.png',
           it: ['Header', 'Tutti gli header HTTP della risposta principale, per chi vuole vedere i dati grezzi.'],
           en: ['Headers', 'All HTTP headers of the main response, for anyone who wants the raw data.'] }
       ];
@@ -321,7 +337,8 @@ sudo ./tools/php-vuln-check.sh --csv &gt; inventario.csv</code></pre>
         current = i;
         var s = SHOTS[i], t = s[lang()];
         var img = document.getElementById('gimg');
-        img.src = s.src; img.alt = t[0];
+        img.src = 'screenshots/' + lang() + '/' + s.src; img.alt = t[0];
+        document.getElementById('hero-shot').src = 'screenshots/' + lang() + '/security-tab.png';
         var cap = document.getElementById('gcap');
         cap.textContent = '';
         var h = document.createElement('h3'); h.textContent = t[0];

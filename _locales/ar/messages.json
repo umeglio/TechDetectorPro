@@ -1,0 +1,8 @@
+{
+  "extName": {
+    "message": "Tech Detector Pro"
+  },
+  "extDescription": {
+    "message": "تقنيات المواقع وإصدارات الخادم (Apache وnginx وPHP وOpenSSL) وترويسات الأمان والمكوّنات القديمة ذات ثغرات CVE معروفة."
+  }
+}

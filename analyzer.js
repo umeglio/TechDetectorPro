@@ -5,6 +5,7 @@
  * Tutto il codice gira nel popup: nessun dato viene inviato a servizi esterni.
  */
 'use strict';
+/* global t */
 
 /* ---------- utilità versioni ---------- */
 function cmpVersion(a, b) {
@@ -92,32 +93,32 @@ function analyzeHeaders(capture, page) {
   const row = (label, value, hint) => { if (value !== null && value !== undefined && value !== '') server.push({ label, value: String(value), hint }); };
 
   if (capture) {
-    row('URL finale', capture.url);
-    row('Indirizzo IP', capture.ip);
-    row('Stato HTTP', capture.statusLine || capture.statusCode);
+    row(t('srv.finalUrl'), capture.url);
+    row(t('srv.ip'), capture.ip);
+    row(t('srv.status'), capture.statusLine || capture.statusCode);
   }
   if (page) {
     const proto = { 'h3': 'HTTP/3 (QUIC)', 'h2': 'HTTP/2', 'http/1.1': 'HTTP/1.1', 'http/1.0': 'HTTP/1.0' }[page.protocol] || page.protocol;
-    row('Protocollo', proto);
-    row('Cifratura', /^https:/.test(page.url) ? 'HTTPS' : 'nessuna (HTTP in chiaro)');
+    row(t('srv.protocol'), proto);
+    row(t('srv.encryption'), /^https:/.test(page.url) ? 'HTTPS' : t('srv.httpsNo'));
   }
 
   // Server / X-Powered-By & co.
   const serverProducts = parseProducts(h['server']);
-  if (h['server']) row('Server', h['server']);
-  if (serverProducts.os) row('Sistema operativo (da banner)', serverProducts.os);
+  if (h['server']) row(t('srv.server'), h['server']);
+  if (serverProducts.os) row(t('srv.os'), serverProducts.os);
   serverProducts.forEach((p) => add(p.name, p.version, 'header Server'));
 
   // distribuzione dedotta dalla versione del pacchetto Apache/nginx
   if (serverProducts.os) {
     const d = guessDistro(serverProducts);
     if (d) {
-      row('Distribuzione stimata', `${d.name} ${d.version}`, d.note);
-      techs.push({ name: d.name, version: d.version, type: 'dedotto dal banner ' + d.from, category: 'Sistema operativo', fromHeaders: true });
+      row(t('srv.distro'), `${d.name} ${d.version}`, d.note);
+      techs.push({ name: d.name, version: d.version, type: t('type.distro', d.from), category: 'Sistema operativo', fromHeaders: true, deduced: true });
     }
   }
   if (page && /Apache2 (Ubuntu|Debian) Default Page|Welcome to nginx!|IIS Windows Server|Test Page for the (Apache|Nginx) HTTP Server/i.test(page.title || '')) {
-    row('Pagina di default', page.title, 'il server mostra la pagina predefinita del pacchetto: host probabilmente dimenticato');
+    row(t('srv.defaultPage'), page.title, t('srv.defaultPageHint'));
   }
 
   if (h['x-powered-by']) {
@@ -160,28 +161,28 @@ function analyzeHeaders(capture, page) {
     'LiteSpeed Cache': 'Cache Tool', 'miraCACHE': 'Cache Tool', 'Ruby on Rails / Rack': 'Framework Backend', 'ASP.NET MVC': 'Framework Backend' };
   techs.forEach((t) => { if (cats[t.name]) t.category = cats[t.name]; });
 
-  if (h['via']) row('Via (proxy)', h['via']);
+  if (h['via']) row(t('srv.via'), h['via']);
   if (h['content-type']) row('Content-Type', h['content-type']);
-  if (h['content-encoding']) row('Compressione', h['content-encoding']);
+  if (h['content-encoding']) row(t('srv.compression'), h['content-encoding']);
   if (h['cache-control']) row('Cache-Control', h['cache-control']);
-  if (h['age']) row('Age (cache)', h['age'] + ' s');
+  if (h['age']) row(t('srv.age'), h['age'] + ' s');
   ['x-cache', 'cf-cache-status', 'x-cache-status', 'x-proxy-cache', 'x-vercel-cache', 'x-litespeed-cache'].forEach((k) => {
-    if (h[k]) row('Cache: ' + k, h[k]);
+    if (h[k]) row(t('srv.cache', k), h[k]);
   });
-  if (h['alt-svc']) row('Alt-Svc', h['alt-svc'], /h3/.test(h['alt-svc']) ? 'HTTP/3 annunciato' : '');
+  if (h['alt-svc']) row('Alt-Svc', h['alt-svc'], /h3/.test(h['alt-svc']) ? t('srv.h3') : '');
   if (h['last-modified']) row('Last-Modified', h['last-modified']);
   if (h['etag']) row('ETag', h['etag']);
   if (page) {
-    if (page.ttfb !== null) row('TTFB', page.ttfb + ' ms');
-    if (page.loadTime) row('Caricamento pagina', page.loadTime + ' ms');
-    if (page.transferSize) row('Dimensione trasferita', (page.transferSize / 1024).toFixed(1) + ' KB');
-    row('Nodi DOM', page.domNodes);
-    row('Charset', page.charset);
-    row('Doctype / modalità', page.doctype + ' / ' + page.renderMode);
-    row('Lingua', page.lang);
-    row('Meta generator', page.generator);
-    row('Script (esterni / cross-origin)', `${page.scripts} (${page.externalScripts} / ${page.crossOriginScripts})`);
-    row('Service Worker attivo', page.serviceWorker ? 'sì' : 'no');
+    if (page.ttfb !== null) row(t('srv.ttfb'), page.ttfb + ' ms');
+    if (page.loadTime) row(t('srv.load'), page.loadTime + ' ms');
+    if (page.transferSize) row(t('srv.size'), (page.transferSize / 1024).toFixed(1) + ' KB');
+    row(t('srv.dom'), page.domNodes);
+    row(t('srv.charset'), page.charset);
+    row(t('srv.doctype'), page.doctype + ' / ' + page.renderMode);
+    row(t('srv.lang'), page.lang);
+    row(t('srv.generator'), page.generator);
+    row(t('srv.scripts'), `${page.scripts} (${page.externalScripts} / ${page.crossOriginScripts})`);
+    row(t('srv.sw'), page.serviceWorker ? t('ui.yes') : t('ui.no'));
   }
 
   // cookie di sessione rivelatori del backend
@@ -199,7 +200,7 @@ function analyzeHeaders(capture, page) {
   if (cookieNames.size) {
     const names = Array.from(cookieNames);
     const short = names.slice(0, 12).map((n) => (n.length > 28 ? n.slice(0, 26) + '…' : n));
-    row('Cookie rilevati', `${names.length}: ${short.join(', ')}${names.length > 12 ? ` (+${names.length - 12})` : ''}`);
+    row(t('srv.cookies'), `${names.length}: ${short.join(', ')}${names.length > 12 ? ` (+${names.length - 12})` : ''}`);
   }
 
   return { server, techs, security: auditSecurity(h, capture, page, setCookie), headers: capture ? capture.headers : [] };
@@ -218,7 +219,7 @@ function guessDistro(products) {
   for (const p of products) {
     const name = canonical(p.name);
     const v = DISTRO_BY_PACKAGE[os][name] && DISTRO_BY_PACKAGE[os][name][p.version];
-    if (v) return { name: os, version: v, from: `${p.name}/${p.version}`, note: `${name} ${p.version} è il pacchetto di ${os} ${v}` };
+    if (v) return { name: os, version: v, from: `${p.name}/${p.version}`, note: t('srv.distroNote', name, p.version, os, v) };
   }
   return null;
 }
@@ -229,49 +230,49 @@ function auditSecurity(h, capture, page, setCookie) {
   const https = /^https:/.test((capture && capture.url) || (page && page.url) || '');
   const c = (name, ok, detail, weight = 1) => checks.push({ name, ok, detail, weight });
 
-  c('HTTPS', !!https, https ? 'connessione cifrata' : 'il sito non usa HTTPS', 3);
+  c('HTTPS', !!https, https ? t('d.httpsOk') : t('d.httpsKo'), 3);
   const hsts = h['strict-transport-security'];
   const maxAge = hsts ? parseInt((hsts.match(/max-age=(\d+)/) || [])[1] || '0', 10) : 0;
-  c('Strict-Transport-Security', !!hsts && maxAge >= 15552000, hsts ? `${hsts}${maxAge < 15552000 ? ' (max-age < 180 giorni)' : ''}` : 'assente', 2);
+  c('Strict-Transport-Security', !!hsts && maxAge >= 15552000, hsts ? `${hsts}${maxAge < 15552000 ? t('d.hstsShort') : ''}` : t('d.absent'), 2);
   const csp = h['content-security-policy'];
   const cspIssues = [];
   if (csp) {
     const scriptSrc = (csp.match(/(?:^|;)\s*script-src\s+([^;]*)/i) || csp.match(/(?:^|;)\s*default-src\s+([^;]*)/i) || [])[1];
-    if (!scriptSrc) cspIssues.push('nessuna direttiva script-src/default-src (non limita gli script)');
+    if (!scriptSrc) cspIssues.push(t('d.cspNoScript'));
     else {
       const strict = /'strict-dynamic'|'nonce-|'sha(256|384|512)-/.test(scriptSrc);
-      if (/'unsafe-inline'/.test(scriptSrc) && !strict) cspIssues.push("script-src con 'unsafe-inline'");
-      if (/'unsafe-eval'/.test(scriptSrc)) cspIssues.push("script-src con 'unsafe-eval'");
-      if (/(^|\s)(\*|https?:|data:)(\s|$)/.test(scriptSrc)) cspIssues.push('script-src con sorgenti jolly (*, https:, data:)');
+      if (/'unsafe-inline'/.test(scriptSrc) && !strict) cspIssues.push(t('d.cspInline'));
+      if (/'unsafe-eval'/.test(scriptSrc)) cspIssues.push(t('d.cspEval'));
+      if (/(^|\s)(\*|https?:|data:)(\s|$)/.test(scriptSrc)) cspIssues.push(t('d.cspWild'));
     }
   }
   c('Content-Security-Policy', !!csp && !cspIssues.length,
-    csp ? (cspIssues.length ? 'presente ma debole: ' + cspIssues.join('; ') : 'presente e restrittiva sugli script') :
-      (h['content-security-policy-report-only'] ? 'solo report-only (non applicata)' : 'assente'), 2);
-  c('X-Content-Type-Options', /nosniff/i.test(h['x-content-type-options'] || ''), h['x-content-type-options'] || 'assente');
-  c('Protezione clickjacking', !!h['x-frame-options'] || /frame-ancestors/.test(csp || ''),
-    h['x-frame-options'] || (/frame-ancestors/.test(csp || '') ? 'CSP frame-ancestors' : 'assente'));
-  c('Referrer-Policy', !!h['referrer-policy'], h['referrer-policy'] || 'assente');
-  c('Permissions-Policy', !!h['permissions-policy'], h['permissions-policy'] ? 'presente' : 'assente');
-  c('Cross-Origin-Opener-Policy', !!h['cross-origin-opener-policy'], h['cross-origin-opener-policy'] || 'assente');
+    csp ? (cspIssues.length ? t('d.cspWeak', cspIssues.join('; ')) : t('d.cspOk')) :
+      (h['content-security-policy-report-only'] ? t('d.cspReportOnly') : t('d.absent')), 2);
+  c('X-Content-Type-Options', /nosniff/i.test(h['x-content-type-options'] || ''), h['x-content-type-options'] || t('d.absent'));
+  c(t('chk.clickjacking'), !!h['x-frame-options'] || /frame-ancestors/.test(csp || ''),
+    h['x-frame-options'] || (/frame-ancestors/.test(csp || '') ? 'CSP frame-ancestors' : t('d.absent')));
+  c('Referrer-Policy', !!h['referrer-policy'], h['referrer-policy'] || t('d.absent'));
+  c('Permissions-Policy', !!h['permissions-policy'], h['permissions-policy'] ? t('d.present') : t('d.absent'));
+  c('Cross-Origin-Opener-Policy', !!h['cross-origin-opener-policy'], h['cross-origin-opener-policy'] || t('d.absent'));
   if (h['access-control-allow-origin'] === '*' && /true/i.test(h['access-control-allow-credentials'] || ''))
-    c('CORS', false, 'Allow-Origin * con credenziali', 2);
+    c('CORS', false, t('d.corsCred'), 2);
   else if (h['access-control-allow-origin']) c('CORS', h['access-control-allow-origin'] !== '*', 'Allow-Origin: ' + h['access-control-allow-origin']);
 
   const versionLeak = /\d+\.\d+/.test(h['server'] || '') || !!h['x-powered-by'] || !!h['x-aspnet-version'] || !!h['x-aspnetmvc-version'];
-  c('Nessuna esposizione di versione', !versionLeak,
-    versionLeak ? 'gli header rivelano software e versione (Server/X-Powered-By): utile a un attaccante' : 'banner non verboso', 2);
+  c(t('chk.noLeak'), !versionLeak,
+    versionLeak ? t('d.leak') : t('d.noLeak'), 2);
 
   if (setCookie) {
     const cookies = setCookie.split('\n').filter(Boolean);
     const weak = cookies.filter((ck) => (https && !/;\s*secure/i.test(ck)) || !/;\s*httponly/i.test(ck) || !/;\s*samesite/i.test(ck));
-    c('Flag dei cookie (Secure/HttpOnly/SameSite)', weak.length === 0,
-      weak.length ? `${weak.length} cookie su ${cookies.length} senza tutti i flag: ${weak.map((w) => w.split('=')[0]).slice(0, 5).join(', ')}` : 'ok');
+    c(t('chk.cookies'), weak.length === 0,
+      weak.length ? t('d.cookiesWeak', weak.length, cookies.length, weak.map((w) => w.split('=')[0]).slice(0, 5).join(', ')) : t('d.ok'));
   }
   if (page) {
-    if (https) c('Contenuti misti', page.mixedContent === 0, page.mixedContent ? `${page.mixedContent} risorse caricate via http://` : 'nessuno');
+    if (https) c(t('chk.mixed'), page.mixedContent === 0, page.mixedContent ? t('d.mixed', page.mixedContent) : t('d.none'));
     c('Subresource Integrity', page.crossOriginWithoutSRI === 0,
-      page.crossOriginWithoutSRI ? `${page.crossOriginWithoutSRI} script cross-origin senza attributo integrity` : 'ok');
+      page.crossOriginWithoutSRI ? t('d.sri', page.crossOriginWithoutSRI) : t('d.ok'));
   }
 
   const total = checks.reduce((s, x) => s + x.weight, 0);
@@ -290,89 +291,92 @@ function auditSecurity(h, capture, page, setCookie) {
 const VULN_RULES = [
   // PHP
   { tech: 'PHP', test: (v) => lt(v, '8.2'), severity: 'critical',
-    msg: 'Ramo PHP fuori supporto (EOL): nessuna patch di sicurezza. Rami supportati: 8.2 (solo sicurezza, fino a fine 2026), 8.3, 8.4, 8.5.',
+    msg: 'v.php.eol',
     cves: ['CVE-2024-4577 (argument injection CGI, <8.1.29)', 'CVE-2024-8926', 'CVE-2024-11236'] },
   { tech: 'PHP', test: (v) => cmpVersion(branch(v), '8.2') === 0, severity: 'medium',
-    msg: 'PHP 8.2 riceve solo patch di sicurezza e raggiunge l\'EOL il 31/12/2026: pianificare la migrazione a 8.4/8.5.' },
+    msg: 'v.php.82' },
   { tech: 'PHP', test: (v) => [['8.2', '8.2.35'], ['8.3', '8.3.36'], ['8.4', '8.4.27'], ['8.5', '8.5.12']].some(([b, fix]) => branch(v) === b && lt(v, fix)),
     severity: 'critical',
-    msg: 'PHP2Shell: use-after-free nella gestione di sessioni/upload multipart, RCE non autenticata con PoC pubblici (avviso ACN AL07/261021/CSIRT-ITA). Corrette in 8.2.35, 8.3.36, 8.4.27, 8.5.12. Le distribuzioni possono aver applicato backport senza cambiare versione: verificare sul server con tools/php-vuln-check.sh.',
+    msg: 'v.php.p2s',
     cves: ['CVE-2026-109618', 'CVE-2026-109619'] },
   { tech: 'PHP', test: (v) => lt(v, '8.2'), severity: 'critical',
-    msg: 'PHP2Shell su ramo fuori supporto: esistono solo backport minimi in sorgente per 7.4/8.0/8.1.', cves: ['CVE-2026-109618', 'CVE-2026-109619'] },
+    msg: 'v.php.p2sEol', cves: ['CVE-2026-109618', 'CVE-2026-109619'] },
   { tech: 'PHP', test: () => true, severity: 'high',
-    msg: 'CVE-2026-115560 (sessioni, upload progress) non è ancora corretta da alcuna release: impostare session.upload_progress.enabled = 0 in php.ini o nel pool FPM e riavviare i worker. Esporre la versione (X-Powered-By) facilita la ricerca dei bersagli: expose_php = Off.',
+    msg: 'v.php.115560',
     cves: ['CVE-2026-115560'] },
 
   // Apache httpd
-  { tech: 'Apache HTTP Server', test: (v) => lt(v, '2.4'), severity: 'critical', msg: 'Apache 2.2 o precedente: fuori supporto dal 2017.' },
+  { tech: 'Apache HTTP Server', test: (v) => lt(v, '2.4'), severity: 'critical', msg: 'v.apache.22' },
   { tech: 'Apache HTTP Server', test: (v) => !lt(v, '2.4') && lt(v, '2.4.62'), severity: 'critical',
-    msg: 'Apache httpd < 2.4.62: vulnerabilità gravi in mod_rewrite, mod_proxy e handler (SSRF, esecuzione/disclosure di codice sorgente).',
+    msg: 'v.apache.62',
     cves: ['CVE-2024-38476', 'CVE-2024-38474', 'CVE-2024-38475', 'CVE-2024-40725', 'CVE-2024-40898'] },
   { tech: 'Apache HTTP Server', test: (v) => !lt(v, '2.4.62') && lt(v, '2.4.65'), severity: 'high',
-    msg: 'Apache httpd < 2.4.65: CVE corrette a luglio 2025 (mod_ssl, mod_proxy_http2, HTTP response splitting).',
+    msg: 'v.apache.65',
     cves: ['CVE-2025-23048', 'CVE-2025-49812', 'CVE-2025-53020', 'CVE-2024-42516', 'CVE-2025-54090'] },
 
   // nginx
   { tech: 'nginx', test: (v) => lt(v, '1.26.3') || (branch(v) === '1.27' && lt(v, '1.27.4')), severity: 'high',
-    msg: 'nginx con CVE note (riuso sessioni TLS su virtual host, worker crash in mp4/HTTP/3).',
+    msg: 'v.nginx.a',
     cves: ['CVE-2025-23419', 'CVE-2024-7347', 'CVE-2024-32760'] },
   { tech: 'nginx', test: (v) => lt(v, '1.28.1') && !lt(v, '1.26.3') && !(branch(v) === '1.27' && lt(v, '1.27.4')), severity: 'medium',
-    msg: 'nginx precedente al rilascio di agosto 2025 (ngx_mail_smtp_module).', cves: ['CVE-2025-53859'] },
+    msg: 'v.nginx.b', cves: ['CVE-2025-53859'] },
 
   // OpenSSL
-  { tech: 'OpenSSL', test: (v) => lt(v, '3.0'), severity: 'critical', msg: 'OpenSSL 1.x è fuori supporto (EOL settembre 2023).' },
-  { tech: 'OpenSSL', test: (v) => ['3.1', '3.2'].includes(branch(v)), severity: 'high', msg: 'Ramo OpenSSL 3.1/3.2 fuori supporto: usare 3.0 LTS, 3.5 LTS o successivi.' },
+  { tech: 'OpenSSL', test: (v) => lt(v, '3.0'), severity: 'critical', msg: 'v.openssl.1' },
+  { tech: 'OpenSSL', test: (v) => ['3.1', '3.2'].includes(branch(v)), severity: 'high', msg: 'v.openssl.3x' },
   { tech: 'OpenSSL', test: (v) => (branch(v) === '3.0' && lt(v, '3.0.18')) || (branch(v) === '3.5' && lt(v, '3.5.4')), severity: 'medium',
-    msg: 'OpenSSL con patch level datato.', cves: ['CVE-2025-9230', 'CVE-2025-9231', 'CVE-2025-9232'] },
+    msg: 'v.openssl.patch', cves: ['CVE-2025-9230', 'CVE-2025-9231', 'CVE-2025-9232'] },
 
   // IIS / ASP.NET
-  { tech: 'Microsoft IIS', test: (v) => lt(v, '10.0'), severity: 'critical', msg: 'IIS < 10 implica Windows Server 2012 R2 o precedenti, fuori supporto.' },
-  { tech: 'ASP.NET', test: (v) => /^[12]\./.test(v), severity: 'high', msg: 'ASP.NET 1.x/2.0 (CLR 2): runtime legacy non più aggiornato.' },
+  { tech: 'Microsoft IIS', test: (v) => lt(v, '10.0'), severity: 'critical', msg: 'v.iis' },
+  { tech: 'ASP.NET', test: (v) => /^[12]\./.test(v), severity: 'high', msg: 'v.aspnet' },
 
   // sistemi operativi (stimati dal banner)
   { tech: 'Ubuntu', test: (v) => !['20.04', '22.04', '24.04', '25.10', '26.04'].includes(v), severity: 'critical',
-    msg: 'Release di Ubuntu fuori supporto: il sistema operativo non riceve più patch di sicurezza (versione stimata dal banner del server).' },
-  { tech: 'Ubuntu', test: (v) => v === '20.04', severity: 'high', msg: 'Ubuntu 20.04: supporto standard terminato a maggio 2025, patch solo con Ubuntu Pro/ESM.' },
-  { tech: 'Debian', test: (v) => cmpVersion(v, '12') < 0, severity: 'critical', msg: 'Release di Debian fuori supporto (Debian 11 LTS terminato ad agosto 2026).' },
+    msg: 'v.ubuntu.eol' },
+  { tech: 'Ubuntu', test: (v) => v === '20.04', severity: 'high', msg: 'v.ubuntu.2004' },
+  { tech: 'Debian', test: (v) => cmpVersion(v, '12') < 0, severity: 'critical', msg: 'v.debian.eol' },
 
   // Tomcat
-  { tech: 'Apache Tomcat', test: (v) => lt(v, '9.0'), severity: 'critical', msg: 'Tomcat < 9 fuori supporto.' },
+  { tech: 'Apache Tomcat', test: (v) => lt(v, '9.0'), severity: 'critical', msg: 'v.tomcat.eol' },
   { tech: 'Apache Tomcat', test: (v) => (branch(v, 1) === '9' && lt(v, '9.0.99')) || (branch(v, 1) === '10' && lt(v, '10.1.35')) || (branch(v, 1) === '11' && lt(v, '11.0.3')),
-    severity: 'critical', msg: 'Tomcat vulnerabile a RCE tramite partial PUT.', cves: ['CVE-2025-24813'] },
+    severity: 'critical', msg: 'v.tomcat.put', cves: ['CVE-2025-24813'] },
 
   // CMS
-  { tech: 'WordPress', test: (v) => lt(v, '6.4'), severity: 'high', msg: 'WordPress molto datato: aggiornare all\'ultima release 6.x (le patch di sicurezza sono garantite solo sull\'ultimo ramo).' },
-  { tech: 'WordPress', test: (v) => !lt(v, '6.4') && lt(v, '6.8'), severity: 'medium', msg: 'WordPress non all\'ultimo ramo: aggiornare.' },
-  { tech: 'Drupal', test: (v) => lt(v, '10'), severity: 'high', msg: 'Drupal 7/9 fuori supporto (Drupal 7 EOL gennaio 2025).' },
-  { tech: 'Joomla', test: (v) => lt(v, '5'), severity: 'high', msg: 'Joomla 3/4 fuori supporto.', cves: ['CVE-2023-23752 (Joomla 4.0-4.2.7)'] },
+  { tech: 'WordPress', test: (v) => lt(v, '6.4'), severity: 'high', msg: 'v.wp.old' },
+  { tech: 'WordPress', test: (v) => !lt(v, '6.4') && lt(v, '6.8'), severity: 'medium', msg: 'v.wp.branch' },
+  { tech: 'Drupal', test: (v) => lt(v, '10'), severity: 'high', msg: 'v.drupal' },
+  { tech: 'Joomla', test: (v) => lt(v, '5'), severity: 'high', msg: 'v.joomla', cves: ['CVE-2023-23752 (Joomla 4.0-4.2.7)'] },
 
   // librerie front-end
-  { tech: 'jQuery', test: (v) => lt(v, '3.5.0'), severity: 'medium', msg: 'jQuery < 3.5.0: XSS in htmlPrefilter / manipolazione HTML.', cves: ['CVE-2020-11022', 'CVE-2020-11023', 'CVE-2019-11358'] },
-  { tech: 'jQuery UI', test: (v) => lt(v, '1.13.2'), severity: 'medium', msg: 'jQuery UI < 1.13.2: XSS.', cves: ['CVE-2022-31160', 'CVE-2021-41182', 'CVE-2021-41184'] },
-  { tech: 'AngularJS', test: () => true, severity: 'high', msg: 'AngularJS 1.x è EOL da gennaio 2022: CVE ReDoS/XSS non più corrette.', cves: ['CVE-2022-25869', 'CVE-2023-26116', 'CVE-2024-21490'] },
-  { tech: 'Bootstrap', test: (v) => lt(v, '3.4.1') || (branch(v, 1) === '4' && lt(v, '4.3.1')), severity: 'medium', msg: 'Bootstrap con XSS nei componenti data-*.', cves: ['CVE-2019-8331', 'CVE-2018-14042'] },
-  { tech: 'Bootstrap', test: (v) => lt(v, '5'), severity: 'low', msg: 'Bootstrap 3/4 non più mantenuto (EOL): migrare a 5.x.' },
-  { tech: 'Lodash', test: (v) => lt(v, '4.17.21'), severity: 'high', msg: 'Lodash < 4.17.21: command injection / prototype pollution.', cves: ['CVE-2021-23337', 'CVE-2020-8203'] },
-  { tech: 'Underscore.js', test: (v) => lt(v, '1.13.6'), severity: 'medium', msg: 'Underscore < 1.13.6: code injection in _.template.', cves: ['CVE-2021-23358'] },
-  { tech: 'Moment.js', test: (v) => lt(v, '2.29.4'), severity: 'medium', msg: 'Moment.js < 2.29.4: ReDoS / path traversal.', cves: ['CVE-2022-31129', 'CVE-2022-24785'] },
-  { tech: 'Moment.js', test: (v) => !lt(v, '2.29.4'), severity: 'info', msg: 'Moment.js è in modalità manutenzione: valutare Day.js, Luxon o Temporal.' },
-  { tech: 'Handlebars', test: (v) => lt(v, '4.7.7'), severity: 'high', msg: 'Handlebars < 4.7.7: RCE/prototype pollution nei template.', cves: ['CVE-2021-23369', 'CVE-2021-23383'] },
-  { tech: 'Vue.js', test: (v) => lt(v, '3'), severity: 'medium', msg: 'Vue 2 è EOL da dicembre 2023.', cves: ['CVE-2024-6783'] },
+  { tech: 'jQuery', test: (v) => lt(v, '3.5.0'), severity: 'medium', msg: 'v.jquery', cves: ['CVE-2020-11022', 'CVE-2020-11023', 'CVE-2019-11358'] },
+  { tech: 'jQuery UI', test: (v) => lt(v, '1.13.2'), severity: 'medium', msg: 'v.jqueryui', cves: ['CVE-2022-31160', 'CVE-2021-41182', 'CVE-2021-41184'] },
+  { tech: 'AngularJS', test: () => true, severity: 'high', msg: 'v.angularjs', cves: ['CVE-2022-25869', 'CVE-2023-26116', 'CVE-2024-21490'] },
+  { tech: 'Bootstrap', test: (v) => lt(v, '3.4.1') || (branch(v, 1) === '4' && lt(v, '4.3.1')), severity: 'medium', msg: 'v.bootstrap.xss', cves: ['CVE-2019-8331', 'CVE-2018-14042'] },
+  { tech: 'Bootstrap', test: (v) => lt(v, '5'), severity: 'low', msg: 'v.bootstrap.eol' },
+  { tech: 'Lodash', test: (v) => lt(v, '4.17.21'), severity: 'high', msg: 'v.lodash', cves: ['CVE-2021-23337', 'CVE-2020-8203'] },
+  { tech: 'Underscore.js', test: (v) => lt(v, '1.13.6'), severity: 'medium', msg: 'v.underscore', cves: ['CVE-2021-23358'] },
+  { tech: 'Moment.js', test: (v) => lt(v, '2.29.4'), severity: 'medium', msg: 'v.moment.cve', cves: ['CVE-2022-31129', 'CVE-2022-24785'] },
+  { tech: 'Moment.js', test: (v) => !lt(v, '2.29.4'), severity: 'info', msg: 'v.moment.maint' },
+  { tech: 'Handlebars', test: (v) => lt(v, '4.7.7'), severity: 'high', msg: 'v.handlebars', cves: ['CVE-2021-23369', 'CVE-2021-23383'] },
+  { tech: 'Vue.js', test: (v) => lt(v, '3'), severity: 'medium', msg: 'v.vue2', cves: ['CVE-2024-6783'] },
   { tech: 'React', test: (v) => ['19.0.0', '19.1.0', '19.1.1', '19.2.0'].includes(v), severity: 'critical',
-    msg: 'React 19 con Server Components vulnerabili a RCE non autenticata ("React2Shell").', cves: ['CVE-2025-55182'] },
+    msg: 'v.react2shell', cves: ['CVE-2025-55182'] },
   { tech: 'Next.js', test: (v) => (branch(v, 1) === '15' && lt(v, '15.2.3')) || (branch(v, 1) === '14' && lt(v, '14.2.25')) || (branch(v, 1) === '13' && lt(v, '13.5.9')) || lt(v, '12.3.5'),
-    severity: 'critical', msg: 'Next.js: bypass dell\'autorizzazione nel middleware.', cves: ['CVE-2025-29927'] },
+    severity: 'critical', msg: 'v.next.mw', cves: ['CVE-2025-29927'] },
   { tech: 'Next.js', test: (v) => [['15.0', '15.0.5'], ['15.1', '15.1.9'], ['15.2', '15.2.6'], ['15.3', '15.3.6'], ['15.4', '15.4.8'], ['15.5', '15.5.7'], ['16.0', '16.0.7']]
       .some(([b, fix]) => branch(v) === b && lt(v, fix)),
-    severity: 'critical', msg: 'Next.js App Router con React Server Components vulnerabili a RCE non autenticata ("React2Shell").', cves: ['CVE-2025-55182', 'CVE-2025-66478'] },
-  { tech: 'DOMPurify', test: (v) => lt(v, '3.2.4'), severity: 'medium', msg: 'DOMPurify < 3.2.4: bypass mXSS.', cves: ['CVE-2024-45801', 'CVE-2025-26791'] },
-  { tech: 'Axios', test: (v) => lt(v, '1.8.2'), severity: 'medium', msg: 'Axios < 1.8.2: SSRF / leak credenziali con URL assoluti.', cves: ['CVE-2025-27152', 'CVE-2023-45857'] },
-  { tech: 'Prototype', test: () => true, severity: 'medium', msg: 'Prototype.js non è più mantenuto.' },
-  { tech: 'MooTools', test: () => true, severity: 'medium', msg: 'MooTools non è più mantenuto.' },
-  { tech: 'TinyMCE', test: (v) => lt(v, '7.0'), severity: 'medium', msg: 'TinyMCE < 7: diverse XSS corrette nel 2024.', cves: ['CVE-2024-29881', 'CVE-2024-38356'] },
-  { tech: 'CKEditor', test: (v) => lt(v, '4.24') || branch(v, 1) === '4', severity: 'medium', msg: 'CKEditor 4 è EOL (giugno 2023) per la versione open source.', cves: ['CVE-2024-24815'] }
+    severity: 'critical', msg: 'v.next.r2s', cves: ['CVE-2025-55182', 'CVE-2025-66478'] },
+  { tech: 'DOMPurify', test: (v) => lt(v, '3.2.4'), severity: 'medium', msg: 'v.dompurify', cves: ['CVE-2024-45801', 'CVE-2025-26791'] },
+  { tech: 'Axios', test: (v) => lt(v, '1.8.2'), severity: 'medium', msg: 'v.axios', cves: ['CVE-2025-27152', 'CVE-2023-45857'] },
+  { tech: 'Prototype', test: () => true, severity: 'medium', msg: 'v.prototype' },
+  { tech: 'MooTools', test: () => true, severity: 'medium', msg: 'v.mootools' },
+  { tech: 'TinyMCE', test: (v) => lt(v, '7.0'), severity: 'medium', msg: 'v.tinymce', cves: ['CVE-2024-29881', 'CVE-2024-38356'] },
+  { tech: 'CKEditor', test: (v) => lt(v, '4.24') || branch(v, 1) === '4', severity: 'medium', msg: 'v.ckeditor', cves: ['CVE-2024-24815'] }
 ];
+
+// le regole contengono chiavi di traduzione (v.*); tr() le risolve nella lingua attiva
+const tr = (k) => (typeof t === 'function' ? t(k) : k);
 
 function checkVulnerabilities(techs) {
   const findings = [];
@@ -381,14 +385,14 @@ function checkVulnerabilities(techs) {
     VULN_RULES.filter((r) => r.tech === t.name).forEach((r) => {
       let hit = false;
       try { hit = r.test(t.version); } catch (e) { hit = false; }
-      if (hit) findings.push({ tech: t.name, version: t.version, severity: r.severity, msg: r.msg, cves: r.cves || [] });
+      if (hit) findings.push({ tech: t.name, version: t.version, severity: r.severity, msg: tr(r.msg), cves: r.cves || [] });
     });
   });
   // AngularJS/Prototype/MooTools anche senza versione
   techs.forEach((t) => {
     if (!t.version && ['AngularJS', 'Prototype', 'MooTools'].includes(t.name)) {
       const r = VULN_RULES.find((x) => x.tech === t.name);
-      findings.push({ tech: t.name, version: null, severity: r.severity, msg: r.msg, cves: r.cves || [] });
+      findings.push({ tech: t.name, version: null, severity: r.severity, msg: tr(r.msg), cves: r.cves || [] });
     }
   });
   const order = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };

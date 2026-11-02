@@ -34,8 +34,8 @@ const DISTRO_PHP = [
   { os: /debian/i, server: 'nginx', ver: '1.22.1', php: '8.2', distro: 'Debian 12' },
   { os: /debian/i, server: 'nginx', ver: '1.26.3', php: '8.4', distro: 'Debian 13' },
   { os: /centos|red hat|rhel|alma|rocky/i, server: 'Apache HTTP Server', ver: '2.4.6', php: '5.4', distro: 'CentOS/RHEL 7' },
-  { os: /centos|red hat|rhel|alma|rocky/i, server: 'Apache HTTP Server', ver: '2.4.37', php: '7.2–8.2 (moduli AppStream)', distro: 'RHEL 8' },
-  { os: /centos|red hat|rhel|alma|rocky/i, server: 'Apache HTTP Server', ver: '2.4.57', php: '8.0–8.3 (moduli AppStream)', distro: 'RHEL 9' }
+  { os: /centos|red hat|rhel|alma|rocky/i, server: 'Apache HTTP Server', ver: '2.4.37', php: '7.2–8.2 (AppStream)', distro: 'RHEL 8' },
+  { os: /centos|red hat|rhel|alma|rocky/i, server: 'Apache HTTP Server', ver: '2.4.57', php: '8.0–8.3 (AppStream)', distro: 'RHEL 9' }
 ];
 
 /* Versione minima di PHP richiesta da CMS/framework */
@@ -52,20 +52,21 @@ const MIN_PHP = [
 
 /* Tecnologie che indicano un backend diverso da PHP */
 const NON_PHP_BACKENDS = [
-  { tech: 'Next.js', backend: 'Node.js (Next.js)', note: 'le pagine sono generate da Node.js, non da PHP' },
-  { tech: 'Nuxt', backend: 'Node.js (Nuxt)', note: 'le pagine sono generate da Node.js' },
-  { tech: 'Nuxt.js', backend: 'Node.js (Nuxt)', note: 'le pagine sono generate da Node.js' },
-  { tech: 'Gatsby', backend: 'sito statico (Gatsby)', note: 'HTML pre-generato, nessun linguaggio lato server' },
-  { tech: 'Express', backend: 'Node.js (Express)', note: 'header X-Powered-By: Express' },
-  { tech: 'ASP.NET', backend: 'ASP.NET (.NET)', note: 'header o cookie ASP.NET' },
-  { tech: 'Java Servlet', backend: 'Java', note: 'cookie JSESSIONID' },
-  { tech: 'Apache Tomcat', backend: 'Java (Tomcat)', note: 'banner del server' },
-  { tech: 'Django', backend: 'Python (Django)', note: 'cookie csrftoken' },
-  { tech: 'Ruby on Rails', backend: 'Ruby (Rails)', note: 'cookie di sessione Rails' },
-  { tech: 'Ruby on Rails / Rack', backend: 'Ruby (Rack)', note: 'header X-Runtime' },
-  { tech: 'Hugo', backend: 'sito statico (Hugo)', note: 'HTML pre-generato' },
-  { tech: 'Jekyll', backend: 'sito statico (Jekyll)', note: 'HTML pre-generato' },
-  { tech: 'GitHub Pages', backend: 'sito statico (GitHub Pages)', note: 'hosting statico' }
+  // backend: nome del backend; static: sito statico generato con...; note: chiave di traduzione del motivo
+  { tech: 'Next.js', backend: 'Node.js (Next.js)', note: 'bn.node' },
+  { tech: 'Nuxt', backend: 'Node.js (Nuxt)', note: 'bn.node' },
+  { tech: 'Nuxt.js', backend: 'Node.js (Nuxt)', note: 'bn.node' },
+  { tech: 'Gatsby', static: 'Gatsby', note: 'bn.static' },
+  { tech: 'Express', backend: 'Node.js (Express)', note: 'bn.express' },
+  { tech: 'ASP.NET', backend: 'ASP.NET (.NET)', note: 'bn.aspnet' },
+  { tech: 'Java Servlet', backend: 'Java', note: 'bn.jsession' },
+  { tech: 'Apache Tomcat', backend: 'Java (Tomcat)', note: 'bn.banner' },
+  { tech: 'Django', backend: 'Python (Django)', note: 'bn.django' },
+  { tech: 'Ruby on Rails', backend: 'Ruby (Rails)', note: 'bn.rails' },
+  { tech: 'Ruby on Rails / Rack', backend: 'Ruby (Rack)', note: 'bn.rack' },
+  { tech: 'Hugo', static: 'Hugo', note: 'bn.static' },
+  { tech: 'Jekyll', static: 'Jekyll', note: 'bn.static' },
+  { tech: 'GitHub Pages', static: 'GitHub Pages', note: 'bn.hosting' }
 ];
 
 const sameOrigin = (u) => new URL(u).origin;
@@ -129,15 +130,15 @@ async function detectPhpVersion(ctx) {
   if (!isPhp) {
     const other = NON_PHP_BACKENDS.find((b) => has(b.tech));
     if (other) {
-      evidence.push(`rilevato ${other.tech}: ${other.note}`);
-      return { version: null, confidence: null, source: null, evidence, isPhp: false, notPhp: other.backend };
+      evidence.push(t('ev.notPhp', other.tech, t(other.note)));
+      return { version: null, confidence: null, source: null, evidence, isPhp: false, notPhp: other.static ? t('b.static', other.static) : other.backend };
     }
   }
   const found = (version, confidence, source) => ({ version, confidence, source, evidence, isPhp: true });
 
   // 0. già presente negli header della pagina?
   const direct = versionFromHeaders(headerMap((ctx.capture && ctx.capture.headers) || []));
-  if (direct) return found(direct.version, 'certa', `header ${direct.header} della pagina`);
+  if (direct) return found(direct.version, 'certa', t('psrc.pageHeader', direct.header));
 
   // 1. risposte generate da PHP
   const light = [
@@ -155,15 +156,15 @@ async function detectPhpVersion(ctx) {
   // "catch-all" (SPA, router applicativo) e lo stato delle risposte .php non prova nulla.
   const [control, ...results] = await Promise.all([probe(`${origin}/${rnd()}-${rnd()}`), ...light.map((u) => probe(u))]);
   const catchAll = !!control && control.status === 200;
-  if (catchAll) evidence.push('il sito risponde 200 anche a percorsi inesistenti (catch-all): lo stato HTTP dei .php non è indicativo');
+  if (catchAll) evidence.push(t('ev.catchAll'));
   for (const r of results) {
     if (!r) continue;
     const v = versionFromHeaders(r.headers);
-    if (v) { evidence.push(`${r.url} → ${r.headers[v.header]}`); return found(v.version, 'certa', `header ${v.header} di ${new URL(r.url).pathname}`); }
+    if (v) { evidence.push(`${r.url} → ${r.headers[v.header]}`); return found(v.version, 'certa', t('psrc.headerOf', v.header, new URL(r.url).pathname)); }
     if (/PHPSESSID|laravel_session|ci_session/.test(r.headers['set-cookie'] || '') || /^PHP\b/i.test(r.headers['x-powered-by'] || '')) isPhp = true;
     if (!catchAll && r.status === 200 && /\/index\.php$/.test(r.url) && /text\/html/.test(r.type)) isPhp = true;
   }
-  evidence.push('X-Powered-By non esposto (probabile expose_php = Off o header rimosso dal proxy)');
+  evidence.push(t('ev.noXPB'));
 
   // 2. ricerca approfondita
   if (ctx.deep) {
@@ -174,15 +175,15 @@ async function detectPhpVersion(ctx) {
   // 3. stima dalla distribuzione
   const est = estimateFromDistro(ctx.capture);
   if (est && isPhp) {
-    evidence.push(`${est.server} ${est.ver} è il pacchetto di ${est.distro}, che installa PHP ${est.php}`);
-    return found(est.php, 'stima', `pacchetto ${est.distro} (PHP di default della distribuzione)`);
+    evidence.push(t('ev.distro', est.server, est.ver, est.distro, est.php));
+    return found(est.php, 'stima', t('psrc.distro', est.distro));
   }
 
   // 4. minimo richiesto dal CMS
   const min = minimumFromCms(ctx.techs);
   if (min) {
-    evidence.push(`${min.tech} ${min.techVersion} richiede PHP ≥ ${min.php}`);
-    return found('≥ ' + min.php, 'minimo', `requisito di ${min.tech} ${min.techVersion}`);
+    evidence.push(t('ev.min', min.tech, min.techVersion, min.php));
+    return found('≥ ' + min.php, 'minimo', t('psrc.min', min.tech, min.techVersion));
   }
 
   return { version: null, confidence: null, source: null, evidence, isPhp };
@@ -197,11 +198,11 @@ async function deepSearch(origin, has, evidence) {
     const m = r.body.match(/<h1 class="p">PHP Version ([\d.]+)/i) || r.body.match(/PHP Version\s*<\/td><td class="v">\s*([\d.]+)/i) ||
       r.body.match(/\bPHP Version:?\s*([\d.]+\d)/i);
     if (m) {
-      evidence.push(`pagina phpinfo() pubblica: ${r.url} (da rimuovere subito: espone configurazione e variabili)`);
-      return { version: m[1], confidence: 'certa', source: `phpinfo() in ${new URL(r.url).pathname}` };
+      evidence.push(t('ev.phpinfo', r.url));
+      return { version: m[1], confidence: 'certa', source: t('psrc.phpinfo', new URL(r.url).pathname) };
     }
     const v = versionFromHeaders(r.headers);
-    if (v) return { version: v.version, confidence: 'certa', source: `header di ${new URL(r.url).pathname}` };
+    if (v) return { version: v.version, confidence: 'certa', source: t('psrc.headerOf', v.header, new URL(r.url).pathname) };
   }
 
   // file di Composer esposti
@@ -212,29 +213,29 @@ async function deepSearch(origin, has, evidence) {
     const name = new URL(r.url).pathname;
     let m = r.body.match(/PHP_VERSION_ID\s*>=\s*(\d)(\d{2})(\d{2})/);
     if (m) {
-      evidence.push(`${name} esposto pubblicamente`);
-      return { version: `≥ ${m[1]}.${+m[2]}.${+m[3]}`, confidence: 'minimo', source: `${name} (controllo piattaforma Composer)` };
+      evidence.push(t('ev.exposed', name));
+      return { version: `≥ ${m[1]}.${+m[2]}.${+m[3]}`, confidence: 'minimo', source: t('psrc.composerCheck', name) };
     }
     m = r.body.match(/"platform-overrides"\s*:\s*\{[^}]*"php"\s*:\s*"([\d.]+)"/) || r.body.match(/"platform"\s*:\s*\{[^}]*"php"\s*:\s*"([\d.]+)"/);
-    if (m) { evidence.push(`${name} esposto pubblicamente`); return { version: m[1], confidence: 'probabile', source: `${name} (config.platform.php)` }; }
+    if (m) { evidence.push(t('ev.exposed', name)); return { version: m[1], confidence: 'probabile', source: t('psrc.composerPlatform', name) }; }
     m = r.body.match(/"require"\s*:\s*\{[^}]*"php"\s*:\s*"([^"]+)"/);
-    if (m) { evidence.push(`${name} esposto pubblicamente`); return { version: m[1], confidence: 'minimo', source: `${name} (vincolo "php")` }; }
+    if (m) { evidence.push(t('ev.exposed', name)); return { version: m[1], confidence: 'minimo', source: t('psrc.composerReq', name) }; }
   }
 
   // easter egg (solo PHP < 5.5): risponde con un'immagine
   const egg = await probe(`${origin}/?=PHPE9568F34-D428-11d2-A769-00AA001ACF42`);
   if (egg && egg.status === 200 && /^image\//.test(egg.type)) {
-    evidence.push('il server risponde all\'easter egg PHPE9568F34 (rimosso da PHP 5.5)');
-    return { version: '< 5.5', confidence: 'probabile', source: 'easter egg PHP' };
+    evidence.push(t('ev.egg'));
+    return { version: '< 5.5', confidence: 'probabile', source: t('psrc.egg') };
   }
 
   // README del CMS per avere almeno il requisito minimo
   if (has('WordPress')) {
     const r = await probe(`${origin}/readme.html`, { body: true });
     const m = r && r.status === 200 && r.body.match(/PHP<\/a>\s*version\s*<strong>([\d.]+)<\/strong>/i);
-    if (m) evidence.push(`readme.html di WordPress pubblico: richiede PHP ≥ ${m[1]}`);
+    if (m) evidence.push(t('ev.wpReadme', m[1]));
   }
-  evidence.push('nessuna pagina phpinfo() o file di Composer esposto');
+  evidence.push(t('ev.noDeep'));
   return null;
 }
 

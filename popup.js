@@ -42,7 +42,26 @@ let REPORT = null;
 
 document.addEventListener('DOMContentLoaded', init);
 
+/** Lingua: preferenza salvata, altrimenti quella del browser. Cambiarla ricarica il popup. */
+async function initLang() {
+  let pref = null;
+  try { pref = (await chrome.storage.local.get('lang')).lang; } catch (e) { /* storage non disponibile */ }
+  I18N.set(I18N.pick(pref, chrome.i18n.getUILanguage()));
+  applyStaticI18n();
+  const sel = $('#lang');
+  I18N.LANGS.forEach(([code, name]) => {
+    const o = document.createElement('option');
+    o.value = code; o.textContent = name; o.selected = code === I18N.lang;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', async () => {
+    try { await chrome.storage.local.set({ lang: sel.value }); } catch (e) { /* ignora */ }
+    location.reload();
+  });
+}
+
 async function init() {
+  await initLang();
   $('#ver').textContent = chrome.runtime.getManifest().version;
   document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => switchTab(t.dataset.tab)));
   $('#btn-export').addEventListener('click', exportJSON);
@@ -51,7 +70,7 @@ async function init() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !/^https?:/.test(tab.url || '')) {
     $('#loading').style.display = 'none';
-    $('#tab-tech').appendChild(el('div', 'empty', 'Apri un sito web (http/https) per analizzarlo.'));
+    $('#tab-tech').appendChild(el('div', 'empty', t('ui.openSite')));
     return;
   }
   $('#host').textContent = new URL(tab.url).host;
@@ -86,12 +105,12 @@ function applyPhp() {
   const php = REPORT.php;
   const techs = REPORT.technologies;
   if (php && (php.version || php.isPhp)) {
-    let t = techs.find((x) => x.name === 'PHP');
-    if (!t) { t = { name: 'PHP', version: null, type: '', category: 'Linguaggio di programmazione', fromHeaders: true }; techs.push(t); }
-    if (php.version && (!t.version || php.confidence === 'certa')) {
-      t.version = php.version;
-      t.type = `${php.confidence} · ${php.source}`;
-    } else if (!t.version) t.type = 'versione nascosta';
+    let tp = techs.find((x) => x.name === 'PHP');
+    if (!tp) { tp = { name: 'PHP', version: null, type: '', category: 'Linguaggio di programmazione', fromHeaders: true }; techs.push(tp); }
+    if (php.version && (!tp.version || php.confidence === 'certa')) {
+      tp.version = php.version;
+      tp.type = `${t('conf.' + php.confidence)} · ${php.source}`;
+    } else if (!tp.version) tp.type = t('php.hidden');
   }
   // le stime e i minimi non generano avvisi CVE come se fossero certi
   const forVulns = techs.map((t) => (t.name === 'PHP' && php && php.confidence && !['certa', 'probabile'].includes(php.confidence))
@@ -99,7 +118,7 @@ function applyPhp() {
   REPORT.vulnerabilities = checkVulnerabilities(forVulns);
   if (php && php.version && php.confidence === 'stima') {
     const est = checkVulnerabilities([{ name: 'PHP', version: php.version.replace(/[^\d.].*$/, '') }]);
-    est.forEach((v) => { v.msg = '[stima dalla distribuzione] ' + v.msg; if (v.severity === 'critical') v.severity = 'high'; });
+    est.forEach((v) => { v.msg = t('php.estPrefix') + v.msg; if (v.severity === 'critical') v.severity = 'high'; });
     REPORT.vulnerabilities = REPORT.vulnerabilities.concat(est);
   }
 }
@@ -114,7 +133,7 @@ function renderAll() {
 
 async function deepPhpSearch(btn) {
   btn.disabled = true;
-  btn.textContent = 'Ricerca in corso…';
+  btn.textContent = t('php.searching');
   REPORT.php = await detectPhpVersion({ url: CTX.url, techs: REPORT.technologies, capture: CTX.capture, deep: true });
   REPORT.php.deepDone = true;
   applyPhp();
@@ -142,14 +161,14 @@ async function getHeaders(tab) {
   const key = 'tab_' + tab.id;
   try {
     const data = (await chrome.storage.session.get(key))[key];
-    if (data && sameDoc(data.url, tab.url)) return Object.assign(data, { source: 'navigazione' });
+    if (data && sameDoc(data.url, tab.url)) return Object.assign(data, { source: 'nav' });
   } catch (e) { /* storage non disponibile */ }
   try {
     const r = await fetch(tab.url, { method: 'GET', credentials: 'include', cache: 'no-store', redirect: 'follow' });
     const headers = [];
     r.headers.forEach((value, name) => headers.push({ name: name.toLowerCase(), value }));
     try { r.body && r.body.cancel(); } catch (e) { /* ignora */ }
-    return { url: r.url, ip: null, statusCode: r.status, statusLine: `${r.status} ${r.statusText}`, headers, source: 'richiesta di verifica' };
+    return { url: r.url, ip: null, statusCode: r.status, statusLine: `${r.status} ${r.statusText}`, headers, source: 'probe' };
   } catch (e) {
     return null;
   }
@@ -165,7 +184,7 @@ function mergeTechs(dom, fromHeaders, libs) {
     t = Object.assign({}, t, { name: typeof canonical === 'function' ? canonical(t.name) : t.name });
     const ex = find(t.name);
     if (ex) { if (!ex.version && t.version) ex.version = cleanVersion(t.version); if (t.fromHeaders) ex.fromHeaders = true; return; }
-    out.push({ name: t.name, version: cleanVersion(t.version), type: t.type || '', category: t.category || 'Altro', fromHeaders: !!t.fromHeaders });
+    out.push({ name: t.name, version: cleanVersion(t.version), type: t.type || '', category: t.category || 'Altro', fromHeaders: !!t.fromHeaders, deduced: !!t.deduced });
   };
   fromHeaders.forEach(push);
   dom.forEach(push);
@@ -173,16 +192,16 @@ function mergeTechs(dom, fromHeaders, libs) {
     const n = LIB_NAME[name] || name;
     // il detector chiama "Angular" anche AngularJS: distinguiamo
     if (name === 'AngularJS') { const a = find('Angular'); if (a && !a.version) { a.name = 'AngularJS'; } }
-    push({ name: n, version, type: 'variabile globale', category: LIB_CATEGORY[n] || 'JavaScript Library' });
+    push({ name: n, version, type: t('type.global'), category: LIB_CATEGORY[n] || 'JavaScript Library' });
   });
   const node = out.find((t) => ['Next.js', 'Nuxt', 'Nuxt.js', 'Express'].includes(t.name));
-  if (node && !find('Node.js')) out.push({ name: 'Node.js', version: null, type: 'dedotto da ' + node.name, category: 'Linguaggio di programmazione', fromHeaders: false });
+  if (node && !find('Node.js')) out.push({ name: 'Node.js', version: null, type: t('type.deduced', node.name), category: 'Linguaggio di programmazione', fromHeaders: false, deduced: true });
 
   // Il browser non vede database, cache, linguaggio o web server: se una di queste tecnologie
   // arriva solo da una parola trovata nel testo della pagina (e non da header/cookie) NON è un
   // rilevamento. Esempio reale: un'applicazione di monitoraggio che elenca "Redis" tra i servizi
   // veniva marcata come "usa Redis". Queste voci vengono scartate.
-  const confirmed = out.filter((t) => !(SERVER_SIDE.has(t.category) && !t.fromHeaders && !STRONG_DOM.has(t.name) && !t.type.startsWith('dedotto')));
+  const confirmed = out.filter((t) => !(SERVER_SIDE.has(t.category) && !t.fromHeaders && !STRONG_DOM.has(t.name) && !t.deduced));
   confirmed.discarded = out.filter((t) => !confirmed.includes(t)).map((t) => t.name);
   return confirmed;
 }
@@ -195,26 +214,26 @@ const STRONG_DOM = new Set(['Next.js', 'Nuxt', 'Nuxt.js', 'PHP', 'Firebase', 'No
 function renderTech(techs, vulns) {
   const root = $('#tab-tech');
   $('#cnt-tech').textContent = techs.length;
-  if (!techs.length) { root.appendChild(el('div', 'empty', 'Nessuna tecnologia rilevata')); return; }
+  if (!techs.length) { root.appendChild(el('div', 'empty', t('ui.noTech'))); return; }
   const vulnTech = new Set(vulns.filter((v) => v.severity !== 'info').map((v) => v.tech));
   const groups = {};
   techs.forEach((t) => { (groups[t.category] = groups[t.category] || []).push(t); });
   const cats = Object.keys(groups).sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
   cats.forEach((cat) => {
     const h = el('div', 'category');
-    h.append(el('span', 'ico', ICON[cat] || '🔹'), el('span', null, cat), el('span', 'pill', groups[cat].length));
+    h.append(el('span', 'ico', ICON[cat] || '🔹'), el('span', null, catLabel(cat)), el('span', 'pill', groups[cat].length));
     root.appendChild(h);
-    groups[cat].sort((a, b) => a.name.localeCompare(b.name)).forEach((t) => {
+    groups[cat].sort((a, b) => a.name.localeCompare(b.name)).forEach((tc) => {
       const it = el('div', 'item');
-      it.appendChild(el('span', 'name', t.name));
-      if (t.version) it.appendChild(el('span', 'badge ver', t.version));
-      if (vulnTech.has(t.name)) {
-        const w = el('span', 'badge warn', '⚠ da aggiornare');
+      it.appendChild(el('span', 'name', tc.name));
+      if (tc.version) it.appendChild(el('span', 'badge ver', tc.version));
+      if (vulnTech.has(tc.name)) {
+        const w = el('span', 'badge warn', t('ui.toUpdate'));
         w.style.cursor = 'pointer';
         w.addEventListener('click', () => switchTab('security'));
         it.appendChild(w);
       }
-      it.appendChild(el('span', 'type', t.fromHeaders ? (t.type || 'header HTTP') : (t.type || '')));
+      it.appendChild(el('span', 'type', tc.fromHeaders ? (tc.type || t('ui.httpHeader')) : (tc.type || '')));
       root.appendChild(it);
     });
   });
@@ -222,7 +241,7 @@ function renderTech(techs, vulns) {
 
 function renderServer(rows, capture) {
   const root = $('#tab-server');
-  if (!rows.length) { root.appendChild(el('div', 'empty', 'Informazioni sul server non disponibili')); return; }
+  if (!rows.length) { root.appendChild(el('div', 'empty', t('ui.noServer'))); return; }
   const kv = el('div', 'kv');
   rows.forEach((r) => {
     kv.appendChild(el('div', 'k', r.label));
@@ -232,9 +251,8 @@ function renderServer(rows, capture) {
   });
   root.appendChild(kv);
   renderPhpBox(root);
-  if (capture && capture.source !== 'navigazione')
-    root.appendChild(el('div', 'note', 'Header ottenuti con una richiesta di verifica: ricarica la pagina per l\'IP del server e gli header originali.'));
-  if (!capture) root.appendChild(el('div', 'note', 'Header HTTP non disponibili: ricarica la pagina.'));
+  if (capture && capture.source !== 'nav') root.appendChild(el('div', 'note', t('ui.headersProbe')));
+  if (!capture) root.appendChild(el('div', 'note', t('ui.headersNone')));
 }
 
 function renderPhpBox(root) {
@@ -244,7 +262,7 @@ function renderPhpBox(root) {
     root.appendChild(el('div', 'category', '🐘 Versione PHP'));
     const box = el('div', 'php-box');
     const head = el('div', 'php-head');
-    head.append(el('span', 'php-ver', 'PHP non utilizzato'), el('span', 'conf ok', 'backend: ' + php.notPhp));
+    head.append(el('span', 'php-ver', t('php.notUsed')), el('span', 'conf ok', t('php.backend', php.notPhp)));
     box.appendChild(head);
     const ul = el('ul', 'evidence');
     php.evidence.forEach((e) => ul.appendChild(el('li', null, e)));
@@ -257,21 +275,21 @@ function renderPhpBox(root) {
   const box = el('div', 'php-box');
   const conf = { certa: 'ok', probabile: 'ok', stima: 'warn', minimo: 'warn' }[php.confidence] || 'ko';
   const head = el('div', 'php-head');
-  head.append(el('span', 'php-ver', php.version || 'non individuata'));
-  if (php.confidence) head.append(el('span', 'conf ' + conf, php.confidence));
+  head.append(el('span', 'php-ver', php.version || t('php.notFound')));
+  if (php.confidence) head.append(el('span', 'conf ' + conf, t('conf.' + php.confidence)));
   box.appendChild(head);
-  if (php.source) box.appendChild(el('div', 'd', 'Fonte: ' + php.source));
+  if (php.source) box.appendChild(el('div', 'd', t('ui.source', php.source)));
   if (php.evidence.length) {
     const ul = el('ul', 'evidence');
     php.evidence.forEach((e) => ul.appendChild(el('li', null, e)));
     box.appendChild(ul);
   }
   if (php.confidence !== 'certa' && !php.deepDone) {
-    const b = el('button', 'btn', '🔎 Ricerca approfondita');
-    b.title = 'Cerca pagine phpinfo() dimenticate, file di Composer esposti e altre tracce (circa 20 richieste al sito)';
+    const b = el('button', 'btn', t('php.deep'));
+    b.title = t('php.deepTitle');
     b.addEventListener('click', () => deepPhpSearch(b));
     box.appendChild(b);
-    box.appendChild(el('div', 'note', 'Esegue richieste aggiuntive al sito: usala su siti tuoi o per cui hai autorizzazione.'));
+    box.appendChild(el('div', 'note', t('php.deepNote')));
   }
   root.appendChild(box);
 }
@@ -283,13 +301,13 @@ function renderSecurity(sec, vulns) {
   pill.textContent = serious || sec.grade;
   if (serious) pill.classList.add('bad');
 
-  root.appendChild(el('div', 'category', '🧯 Componenti da aggiornare / CVE note'));
+  root.appendChild(el('div', 'category', t('sec.components')));
   if (!vulns.length) {
-    root.appendChild(el('div', 'note', 'Nessuna versione vulnerabile rilevata tra quelle esposte. Le versioni non dichiarate non possono essere verificate.'));
+    root.appendChild(el('div', 'note', t('sec.noVulns')));
   }
   vulns.forEach((v) => {
     const box = el('div', 'vuln ' + v.severity);
-    const sevLabel = { critical: 'critica', high: 'alta', medium: 'media', low: 'bassa', info: 'info' }[v.severity];
+    const sevLabel = t('sev.' + v.severity);
     box.append(el('div', 'sev', `${sevLabel} · ${v.tech}${v.version ? ' ' + v.version : ''}`), el('div', null, v.msg));
     if (v.cves.length) {
       const c = el('div', 'cves');
@@ -308,9 +326,9 @@ function renderSecurity(sec, vulns) {
     root.appendChild(box);
   });
 
-  root.appendChild(el('div', 'category', '🛡️ Header di sicurezza'));
+  root.appendChild(el('div', 'category', t('sec.headers')));
   const sc = el('div', 'score');
-  sc.append(el('div', 'grade ' + sec.grade, sec.grade), el('div', null, `Punteggio ${sec.score}/100 · ${sec.checks.filter((c) => c.ok).length}/${sec.checks.length} controlli superati`));
+  sc.append(el('div', 'grade ' + sec.grade, sec.grade), el('div', null, t('sec.score', sec.score, sec.checks.filter((c) => c.ok).length, sec.checks.length)));
   root.appendChild(sc);
   sec.checks.forEach((c) => {
     const row = el('div', 'check ' + (c.ok ? 'ok' : 'ko'));
@@ -319,13 +337,13 @@ function renderSecurity(sec, vulns) {
     row.append(el('span', 'st', c.ok ? '✓' : '✗'), body);
     root.appendChild(row);
   });
-  root.appendChild(el('div', 'note', 'Nota: le distribuzioni Linux (Debian, Ubuntu, RHEL) applicano patch di sicurezza senza cambiare il numero di versione nel banner: verificare sempre sul server.'));
+  root.appendChild(el('div', 'note', t('sec.note')));
 }
 
 function renderHeaders(headers, capture) {
   const root = $('#tab-headers');
-  if (!headers || !headers.length) { root.appendChild(el('div', 'empty', 'Nessun header disponibile: ricarica la pagina.')); return; }
-  if (capture) root.appendChild(el('div', 'note', `Fonte: ${capture.source} · ${capture.statusLine || capture.statusCode}`));
+  if (!headers || !headers.length) { root.appendChild(el('div', 'empty', t('ui.noHeaders'))); return; }
+  if (capture) root.appendChild(el('div', 'note', t('ui.source', `${t('src.' + capture.source)} · ${capture.statusLine || capture.statusCode}`)));
   headers.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach((h) => {
     const d = el('div', 'hdr');
     d.append(el('b', null, h.name), document.createTextNode(': ' + h.value));
@@ -346,13 +364,13 @@ function exportJSON() {
 
 async function copyReport() {
   if (!REPORT) return;
-  const lines = [`Tech Detector Pro - ${REPORT.url}`, `IP: ${REPORT.ip || 'n/d'}`, '', '== Tecnologie =='];
-  REPORT.technologies.forEach((t) => lines.push(`- [${t.category}] ${t.name}${t.version ? ' ' + t.version : ''}`));
-  lines.push('', `== Sicurezza: ${REPORT.security.grade} (${REPORT.security.score}/100) ==`);
+  const lines = [`Tech Detector Pro - ${REPORT.url}`, `IP: ${REPORT.ip || '-'}`, '', `== ${t('rep.tech')} ==`];
+  REPORT.technologies.forEach((x) => lines.push(`- [${catLabel(x.category)}] ${x.name}${x.version ? ' ' + x.version : ''}`));
+  lines.push('', `== ${t('rep.security')}: ${REPORT.security.grade} (${REPORT.security.score}/100) ==`);
   REPORT.security.checks.forEach((c) => lines.push(`${c.ok ? '[OK]' : '[KO]'} ${c.name}: ${c.detail}`));
   if (REPORT.vulnerabilities.length) {
-    lines.push('', '== Componenti da aggiornare ==');
-    REPORT.vulnerabilities.forEach((v) => lines.push(`(${v.severity}) ${v.tech} ${v.version || ''}: ${v.msg} ${v.cves.join(', ')}`));
+    lines.push('', `== ${t('rep.toUpdate')} ==`);
+    REPORT.vulnerabilities.forEach((v) => lines.push(`(${t('sev.' + v.severity)}) ${v.tech} ${v.version || ''}: ${v.msg} ${v.cves.join(', ')}`));
   }
   try {
     await navigator.clipboard.writeText(lines.join('\n'));

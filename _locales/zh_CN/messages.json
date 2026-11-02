@@ -1,0 +1,8 @@
+{
+  "extName": {
+    "message": "Tech Detector Pro"
+  },
+  "extDescription": {
+    "message": "检测网站技术、服务器版本（Apache、nginx、PHP、OpenSSL）、安全响应头以及存在已知 CVE 的过时组件。"
+  }
+}

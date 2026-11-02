@@ -3,9 +3,10 @@
 <h1 align="center">Tech Detector Pro</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.2.1-green.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-2.3.0-green.svg" alt="Version">
   <img src="https://img.shields.io/badge/manifest-v3-orange.svg" alt="Manifest V3">
   <img src="https://img.shields.io/badge/Chrome%20%2F%20Edge-116%2B-brightgreen.svg" alt="Chrome / Edge 116+">
+  <img src="https://img.shields.io/badge/lingue%20%2F%20languages-12-3df5b0.svg" alt="12 languages">
   <img src="https://img.shields.io/badge/dipendenze-zero-blue.svg" alt="Zero dependencies">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT">
 </p>
@@ -14,13 +15,6 @@
 
 <p align="center"><b>🇮🇹 <a href="#-italiano">Italiano</a> · 🇬🇧 <a href="#-english">English</a></b></p>
 
-<p align="center">
-  <img src="screenshots/tech-tab.png" alt="Tecnologie" width="200">
-  <img src="screenshots/server-tab.png" alt="Server" width="200">
-  <img src="screenshots/security-tab.png" alt="Sicurezza" width="200">
-  <img src="screenshots/headers-tab.png" alt="Header" width="200">
-</p>
-
 ---
 
 ## 🇮🇹 Italiano
@@ -28,6 +22,13 @@
 **Tech Detector Pro** è un'estensione per Chrome ed Edge che, con un clic, dice **con che cosa è costruito un sito, quale software gira sul server e con quale versione, quanto è configurato bene e quali componenti vanno aggiornati** perché fuori supporto o esposti a CVE note.
 
 Tutto avviene nel browser: nessun dato viene inviato a servizi esterni. Il progetto non ha dipendenze: JavaScript puro per l'estensione, shell POSIX/bash per gli strumenti.
+
+<p align="center">
+  <img src="screenshots/it/tech-tab.png" alt="Tecnologie" width="200">
+  <img src="screenshots/it/server-tab.png" alt="Server" width="200">
+  <img src="screenshots/it/security-tab.png" alt="Sicurezza" width="200">
+  <img src="screenshots/it/headers-tab.png" alt="Header" width="200">
+</p>
 
 ### Cosa mostra
 
@@ -39,6 +40,10 @@ Tutto avviene nel browser: nessun dato viene inviato a servizi esterni. Il proge
 | **Header** | Tutti gli header HTTP della risposta |
 
 Il report si esporta in **JSON** oppure si copia come testo negli appunti.
+
+### Lingue
+L'interfaccia è disponibile in **12 lingue**, le più parlate al mondo: English · 中文 · हिन्दी · Español · Français · العربية · বাংলা · Português · Русский · 日本語 · Deutsch · Italiano.
+La lingua segue quella del browser e si cambia dal menu in alto nel popup; l'arabo si legge da destra a sinistra. Anche nome e descrizione dell'estensione sono tradotti.
 
 ### Versione di PHP
 
@@ -53,7 +58,7 @@ Quasi tutti i siti in produzione nascondono la versione di PHP (`expose_php = Of
 
 Se il sito usa chiaramente un altro backend (Next.js → Node.js, ASP.NET, Java, Django, Rails, siti statici) compare **"PHP non utilizzato"** con il backend reale.
 
-<p align="center"><img src="screenshots/php-detection.png" alt="Versione PHP" width="330"> <img src="screenshots/non-php-backend.png" alt="Backend non PHP" width="330"></p>
+<p align="center"><img src="screenshots/it/php-detection.png" alt="Versione PHP" width="330"> <img src="screenshots/it/non-php-backend.png" alt="Backend non PHP" width="330"></p>
 
 ### Come evita i falsi positivi
 
@@ -114,10 +119,14 @@ sudo ./tools/php-vuln-check.sh --csv > inventario.csv
 ├── pageinfo.js          versioni delle librerie, prestazioni, cookie, SRI
 ├── analyzer.js          analisi header, voto di sicurezza, regole CVE/EOL
 ├── phpprobe.js          individuazione della versione PHP
-├── popup.html/.css/.js  interfaccia
+├── popup.html/.css/.js  interfaccia (palette miraNTIS)
+├── i18n.js              gestione delle lingue
+├── locales/             testi dell'interfaccia, un file per lingua
+├── _locales/            nome e descrizione dell'estensione per il Chrome Web Store
+├── fonts/               miraFONT (CC0), incluso per funzionare senza rete
 ├── icons/               icon.svg (sorgente) e PNG 16/32/48/128
 ├── index.html           pagina di presentazione (GitHub Pages)
-├── screenshots/         immagini del README e del sito
+├── screenshots/it, en/  immagini del README e del sito, per lingua
 └── tools/               script shell (verifiche PHP, icone, pacchetto zip)
 ```
 
@@ -133,6 +142,13 @@ Le pull request sono benvenute, in particolare per nuove regole in `VULN_RULES`:
 
 Everything runs in the browser and no data is sent anywhere. The project has no dependencies: plain JavaScript for the extension, POSIX shell/bash for the tools.
 
+<p align="center">
+  <img src="screenshots/en/tech-tab.png" alt="Technologies" width="200">
+  <img src="screenshots/en/server-tab.png" alt="Server" width="200">
+  <img src="screenshots/en/security-tab.png" alt="Security" width="200">
+  <img src="screenshots/en/headers-tab.png" alt="Headers" width="200">
+</p>
+
 ### What it shows
 
 | Tab | Content |
@@ -142,7 +158,13 @@ Everything runs in the browser and no data is sent anywhere. The project has no 
 | **Security** | Outdated or vulnerable components with severity and NIST NVD links, **A–F grade** on security headers, cookie flags, mixed content, Subresource Integrity, version-leaking banners |
 | **Headers** | All HTTP response headers |
 
-Reports can be exported as **JSON** or copied as text. The interface is in Italian.
+Reports can be exported as **JSON** or copied as text.
+
+### Languages
+The interface is available in **12 languages**, the most widely spoken in the world: English · 中文 · हिन्दी · Español · Français · العربية · বাংলা · Português · Русский · 日本語 · Deutsch · Italiano.
+It follows the browser language and can be changed from the menu at the top of the popup; Arabic is displayed right-to-left. The extension name and description are translated too.
+
+<p align="center"><img src="screenshots/en/php-detection.png" alt="PHP version" width="330"> <img src="screenshots/en/non-php-backend.png" alt="Non-PHP backend" width="330"></p>
 
 ### PHP version
 

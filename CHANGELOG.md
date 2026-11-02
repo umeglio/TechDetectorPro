@@ -2,6 +2,12 @@
 
 Autore: Umberto Meglio · realizzato con il supporto di Claude di Anthropic
 
+## 2.3.0
+- **12 lingue**: English, 中文, हिन्दी, Español, Français, العربية, বাংলা, Português, Русский, 日本語, Deutsch, Italiano. La lingua segue quella del browser e si cambia dal menu del popup; l'arabo è visualizzato da destra a sinistra. Tradotti anche i controlli di sicurezza, gli avvisi CVE e la ricerca della versione PHP.
+- Nome e descrizione dell'estensione tradotti (`_locales/`) per Chrome Web Store ed Edge Add-ons.
+- Popup nella palette miraNTIS con il font miraFONT (CC0) incluso nell'estensione, tema scuro e chiaro.
+- Screenshot in italiano e in inglese (`screenshots/it/`, `screenshots/en/`); il sito mostra quelli della lingua scelta.
+
 ## 2.2.1
 - Database, cache, linguaggi e web server trovati solo come parola nel testo della pagina vengono scartati (es. "Redis" elencato in una dashboard di monitoraggio).
 - Riconoscimento di **miraCACHE** da qualsiasi header (`X-Cache`, `Via`…).

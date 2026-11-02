@@ -1,0 +1,8 @@
+{
+  "extName": {
+    "message": "Tech Detector Pro"
+  },
+  "extDescription": {
+    "message": "ওয়েবসাইটের প্রযুক্তি, সার্ভারের সংস্করণ (Apache, nginx, PHP, OpenSSL), নিরাপত্তা হেডার ও পরিচিত CVE-যুক্ত পুরনো উপাদান।"
+  }
+}
