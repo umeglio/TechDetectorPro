@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tech Detector Pro",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "Detects web technologies, server software & versions (Apache, nginx, PHP...), HTTP headers, security grade and outdated components with known CVEs.",
   "author": "Umberto Meglio",
   "minimum_chrome_version": "116",

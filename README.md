@@ -1,7 +1,7 @@
 # Tech Detector Pro
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-2.1.1-green.svg)
+![Version](https://img.shields.io/badge/version-2.2.0-green.svg)
 ![Manifest](https://img.shields.io/badge/manifest-v3-orange.svg)
 ![Chrome](https://img.shields.io/badge/Chrome%20%2F%20Edge-116%2B-brightgreen.svg)
 
@@ -53,6 +53,22 @@ Le stime non producono avvisi CVE "critici" come se fossero certe. La ricerca ap
 
 <p align="center"><img src="screenshots/php-detection.png" alt="Versione PHP" width="360"></p>
 
+### Strumenti a riga di comando per CSIRT e sistemisti (2.2)
+L'estensione vede solo ciò che il server **espone**. Per riscontrare una segnalazione (es. CSIRT Italia/ACN) servono anche verifiche sul server: in `tools/` ci sono due script bash.
+
+| Script | Dove si usa | Cosa fa |
+|---|---|---|
+| `tools/php-exposure-scan.sh` | dalla tua postazione, verso i siti | 3 richieste per sito: legge `Server`/`X-Powered-By`, rileva PHP anche con versione nascosta (cookie `PHPSESSID`) e confronta con le soglie PHP2Shell |
+| `tools/php-vuln-check.sh` | **sul server**, in sola lettura | trova tutte le installazioni PHP (CLI, FPM, CGI, LiteSpeed, Remi, Plesk, cPanel, Bitnami, container Docker), cerca i **backport** delle CVE nei changelog dei pacchetti Debian/Ubuntu/RHEL e controlla `session.upload_progress.enabled`, `post_max_size`, `max_input_nesting_level`, `expose_php`, `session.serialize_handler`, `memory_limit`, `pm.max_requests` |
+
+```bash
+./tools/php-exposure-scan.sh -f siti.txt
+sudo ./tools/php-vuln-check.sh          # report leggibile, exit 1 se serve intervenire
+sudo ./tools/php-vuln-check.sh --csv    # una riga per binario, per l'inventario
+```
+
+**PHP2Shell (avviso ACN AL07/261021/CSIRT-ITA):** CVE-2026-109618 e CVE-2026-109619 sono corrette in **8.2.35, 8.3.36, 8.4.27, 8.5.12**; per 7.4/8.0/8.1 esistono solo backport minimi in sorgente o patch delle distribuzioni. **CVE-2026-115560 non è corretta da nessuna release**: va mitigata con `session.upload_progress.enabled = 0` in `php.ini` o nel pool FPM (non con `ini_set()` o `.user.ini`), riavviando i worker.
+
 ### Installazione
 1. `git clone https://github.com/umeglio/TechDetectorPro.git`
 2. Apri `chrome://extensions` (o `edge://extensions`) e attiva la **Modalità sviluppatore**
@@ -83,6 +99,7 @@ Apri un sito e clicca sull'icona. Il badge rosso sulla scheda **Sicurezza** indi
 ├── pageinfo.js     versioni librerie, performance, cookie, SRI (eseguito nella pagina)
 ├── analyzer.js     analisi header, audit sicurezza, regole CVE/EOL
 ├── phpprobe.js     individuazione della versione PHP (4 livelli)
+├── tools/          script bash: scansione remota e verifica PHP sul server
 ├── popup.html/css/js  interfaccia
 └── icons/          16, 32, 48, 128 px
 ```
@@ -131,6 +148,11 @@ Most sites **hide** the PHP version (`expose_php = Off`, or a proxy/CDN strips `
 If the site clearly runs on another backend (Next.js/Nuxt → Node.js, ASP.NET, Java, Django, Rails, static sites) the extension shows **"PHP not used"** with the real backend instead of searching for a version that does not exist.
 
 Estimates never raise "critical" CVE warnings as if they were certain. Deep search sends about 20 requests to the site: use it only on sites you own or are authorised to test.
+
+### Command-line tools for CSIRTs and sysadmins (2.2)
+The extension only sees what the server **discloses**. `tools/` contains two bash scripts: `php-exposure-scan.sh` (remote, 3 requests per site, compares exposed PHP versions with the PHP2Shell thresholds) and `php-vuln-check.sh` (run **on the server**, read-only: finds every PHP install including FPM/Remi/Plesk/cPanel/Docker, detects distribution **backports** in package changelogs and checks the relevant `php.ini` settings).
+
+PHP2Shell: CVE-2026-109618/109619 are fixed in **8.2.35, 8.3.36, 8.4.27, 8.5.12**; **CVE-2026-115560 has no fix yet** and must be mitigated with `session.upload_progress.enabled = 0` (php.ini or FPM pool, then restart workers).
 
 ### Installation
 1. `git clone https://github.com/umeglio/TechDetectorPro.git`

@@ -108,6 +108,18 @@ function analyzeHeaders(capture, page) {
   if (serverProducts.os) row('Sistema operativo (da banner)', serverProducts.os);
   serverProducts.forEach((p) => add(p.name, p.version, 'header Server'));
 
+  // distribuzione dedotta dalla versione del pacchetto Apache/nginx
+  if (serverProducts.os) {
+    const d = guessDistro(serverProducts);
+    if (d) {
+      row('Distribuzione stimata', `${d.name} ${d.version}`, d.note);
+      techs.push({ name: d.name, version: d.version, type: 'dedotto dal banner ' + d.from, category: 'Sistema operativo', fromHeaders: true });
+    }
+  }
+  if (page && /Apache2 (Ubuntu|Debian) Default Page|Welcome to nginx!|IIS Windows Server|Test Page for the (Apache|Nginx) HTTP Server/i.test(page.title || '')) {
+    row('Pagina di default', page.title, 'il server mostra la pagina predefinita del pacchetto: host probabilmente dimenticato');
+  }
+
   if (h['x-powered-by']) {
     row('X-Powered-By', h['x-powered-by']);
     h['x-powered-by'].split(/[\n,]/).forEach((part) => parseProducts(part.trim()).forEach((p) => add(p.name, p.version, 'header X-Powered-By')));
@@ -188,6 +200,24 @@ function analyzeHeaders(capture, page) {
   return { server, techs, security: auditSecurity(h, capture, page, setCookie), headers: capture ? capture.headers : [] };
 }
 
+/* Versione del pacchetto -> release della distribuzione */
+const DISTRO_BY_PACKAGE = {
+  Ubuntu: { 'Apache HTTP Server': { '2.4.7': '14.04', '2.4.12': '15.04', '2.4.18': '16.04', '2.4.29': '18.04', '2.4.41': '20.04', '2.4.52': '22.04', '2.4.58': '24.04' },
+    nginx: { '1.4.6': '14.04', '1.10.3': '16.04', '1.14.0': '18.04', '1.24.0': '24.04' } },
+  Debian: { 'Apache HTTP Server': { '2.4.10': '8', '2.4.25': '9', '2.4.38': '10' },
+    nginx: { '1.6.2': '8', '1.10.3': '9', '1.14.2': '10', '1.22.1': '12', '1.26.3': '13' } }
+};
+function guessDistro(products) {
+  const os = /ubuntu/i.test(products.os) ? 'Ubuntu' : /debian/i.test(products.os) ? 'Debian' : null;
+  if (!os) return null;
+  for (const p of products) {
+    const name = canonical(p.name);
+    const v = DISTRO_BY_PACKAGE[os][name] && DISTRO_BY_PACKAGE[os][name][p.version];
+    if (v) return { name: os, version: v, from: `${p.name}/${p.version}`, note: `${name} ${p.version} è il pacchetto di ${os} ${v}` };
+  }
+  return null;
+}
+
 /* ---------- audit header di sicurezza ---------- */
 function auditSecurity(h, capture, page, setCookie) {
   const checks = [];
@@ -259,9 +289,15 @@ const VULN_RULES = [
     cves: ['CVE-2024-4577 (argument injection CGI, <8.1.29)', 'CVE-2024-8926', 'CVE-2024-11236'] },
   { tech: 'PHP', test: (v) => cmpVersion(branch(v), '8.2') === 0, severity: 'medium',
     msg: 'PHP 8.2 riceve solo patch di sicurezza e raggiunge l\'EOL il 31/12/2026: pianificare la migrazione a 8.4/8.5.' },
-  { tech: 'PHP', test: (v) => (branch(v) === '8.3' && lt(v, '8.3.19')) || (branch(v) === '8.4' && lt(v, '8.4.5')), severity: 'high',
-    msg: 'Patch level PHP non aggiornato: diverse CVE corrette nel 2025 (stream wrapper, header parsing, LDAP).',
-    cves: ['CVE-2025-1219', 'CVE-2025-1736', 'CVE-2025-1861', 'CVE-2025-1734'] },
+  { tech: 'PHP', test: (v) => [['8.2', '8.2.35'], ['8.3', '8.3.36'], ['8.4', '8.4.27'], ['8.5', '8.5.12']].some(([b, fix]) => branch(v) === b && lt(v, fix)),
+    severity: 'critical',
+    msg: 'PHP2Shell: use-after-free nella gestione di sessioni/upload multipart, RCE non autenticata con PoC pubblici (avviso ACN AL07/261021/CSIRT-ITA). Corrette in 8.2.35, 8.3.36, 8.4.27, 8.5.12. Le distribuzioni possono aver applicato backport senza cambiare versione: verificare sul server con tools/php-vuln-check.sh.',
+    cves: ['CVE-2026-109618', 'CVE-2026-109619'] },
+  { tech: 'PHP', test: (v) => lt(v, '8.2'), severity: 'critical',
+    msg: 'PHP2Shell su ramo fuori supporto: esistono solo backport minimi in sorgente per 7.4/8.0/8.1.', cves: ['CVE-2026-109618', 'CVE-2026-109619'] },
+  { tech: 'PHP', test: () => true, severity: 'high',
+    msg: 'CVE-2026-115560 (sessioni, upload progress) non è ancora corretta da alcuna release: impostare session.upload_progress.enabled = 0 in php.ini o nel pool FPM e riavviare i worker. Esporre la versione (X-Powered-By) facilita la ricerca dei bersagli: expose_php = Off.',
+    cves: ['CVE-2026-115560'] },
 
   // Apache httpd
   { tech: 'Apache HTTP Server', test: (v) => lt(v, '2.4'), severity: 'critical', msg: 'Apache 2.2 o precedente: fuori supporto dal 2017.' },
@@ -288,6 +324,12 @@ const VULN_RULES = [
   // IIS / ASP.NET
   { tech: 'Microsoft IIS', test: (v) => lt(v, '10.0'), severity: 'critical', msg: 'IIS < 10 implica Windows Server 2012 R2 o precedenti, fuori supporto.' },
   { tech: 'ASP.NET', test: (v) => /^[12]\./.test(v), severity: 'high', msg: 'ASP.NET 1.x/2.0 (CLR 2): runtime legacy non più aggiornato.' },
+
+  // sistemi operativi (stimati dal banner)
+  { tech: 'Ubuntu', test: (v) => !['20.04', '22.04', '24.04', '25.10', '26.04'].includes(v), severity: 'critical',
+    msg: 'Release di Ubuntu fuori supporto: il sistema operativo non riceve più patch di sicurezza (versione stimata dal banner del server).' },
+  { tech: 'Ubuntu', test: (v) => v === '20.04', severity: 'high', msg: 'Ubuntu 20.04: supporto standard terminato a maggio 2025, patch solo con Ubuntu Pro/ESM.' },
+  { tech: 'Debian', test: (v) => cmpVersion(v, '12') < 0, severity: 'critical', msg: 'Release di Debian fuori supporto (Debian 11 LTS terminato ad agosto 2026).' },
 
   // Tomcat
   { tech: 'Apache Tomcat', test: (v) => lt(v, '9.0'), severity: 'critical', msg: 'Tomcat < 9 fuori supporto.' },

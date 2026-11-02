@@ -1121,18 +1121,20 @@ function detectTechnologies() {
     }
     
     // Firebase
-    if (document.querySelector('script[src*="firebase"]') ||
-        htmlContent.includes('firebase') ||
-        window.firebase) {
+    // SDK reale: script di gstatic.com/firebasejs, /__/firebase/ (Hosting), oggetto globale,
+    // oppure una configurazione con authDomain *.firebaseapp.com (prima bastava la parola "firebase")
+    const fbScript = document.querySelector('script[src*="gstatic.com/firebasejs/"], script[src*="/__/firebase/"], script[src*="firebase-app"], script[src*="firebasejs"]');
+    const fbConfig = /authDomain["']?\s*:\s*["'][\w-]+\.firebaseapp\.com/.test(htmlContent);
+    if (fbScript || fbConfig || window.firebase) {
       
-      let version = null;
-      const firebaseVersionMatch = htmlContent.match(/firebase\/([\d.]+)/i);
-      if (firebaseVersionMatch) version = firebaseVersionMatch[1];
+      let version = (window.firebase && window.firebase.SDK_VERSION) || null;
+      const firebaseVersionMatch = htmlContent.match(/firebasejs\/(\d+\.\d+\.\d+)/i) || htmlContent.match(/\/__\/firebase\/(\d+\.\d+\.\d+)/);
+      if (!version && firebaseVersionMatch) version = firebaseVersionMatch[1];
       
       technologies.push({
         name: 'Firebase',
         version: version,
-        type: 'Database',
+        type: 'SDK client (Firestore/Auth/Realtime DB)',
         category: 'Database'
       });
     }
@@ -1318,13 +1320,26 @@ function detectTechnologies() {
     const htmlContent = document.documentElement.outerHTML;
     
     // Progressive Web App
-    if (document.querySelector('link[rel="manifest"]') ||
-        document.querySelector('meta[name="apple-mobile-web-app-capable"]') ||
-        document.querySelector('script[src*="service-worker.js"]') ||
-        navigator.serviceWorker) {
+    // PWA = manifest + service worker che controlla la pagina.
+    // (prima bastava navigator.serviceWorker, che esiste in OGNI browser moderno)
+    const hasManifest = !!document.querySelector('link[rel="manifest"]');
+    const swActive = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+    if (hasManifest && swActive) {
       technologies.push({
         name: 'PWA',
-        type: 'Progressive Web App',
+        type: 'Progressive Web App (manifest + service worker)',
+        category: 'PWA'
+      });
+    } else if (hasManifest) {
+      technologies.push({
+        name: 'Web App Manifest',
+        type: 'installabile, senza service worker attivo',
+        category: 'PWA'
+      });
+    } else if (swActive) {
+      technologies.push({
+        name: 'Service Worker',
+        type: 'cache/offline, senza manifest',
         category: 'PWA'
       });
     }
@@ -1510,19 +1525,19 @@ function detectTechnologies() {
     const htmlContent = document.documentElement.outerHTML;
     
     // Google Analytics
-    if (window.ga || window.gtag || window.dataLayer || 
-        document.querySelector('script[src*="google-analytics.com"], script[src*="googletagmanager.com"]') ||
-        htmlContent.includes('google-analytics') ||
-        htmlContent.includes('googletagmanager')) {
+    const gaUA = /\bUA-\d{4,10}-\d{1,4}\b/.test(htmlContent);
+    const gaG4 = /\bG-[A-Z0-9]{6,12}\b/.test(htmlContent) || !!document.querySelector('script[src*="googletagmanager.com/gtag/js?id=G-"]');
+    if ((window.ga || window.gtag || document.querySelector('script[src*="google-analytics.com"], script[src*="googletagmanager.com/gtag/"]')) &&
+        (gaUA || gaG4 || window.ga)) {
       
-      // Distinguiamo tra UA e GA4
-      if (htmlContent.includes('UA-')) {
+      // Distinguiamo tra UA e GA4 tramite l'ID di misurazione
+      if (gaUA && !gaG4) {
         technologies.push({
           name: 'Google Analytics (Universal)',
           type: 'Web Analytics',
           category: 'Analytics'
         });
-      } else if (htmlContent.includes('G-')) {
+      } else if (gaG4) {
         technologies.push({
           name: 'Google Analytics 4',
           type: 'Web Analytics',
@@ -1700,8 +1715,7 @@ function detectTechnologies() {
     
     // Integral Ad Science
     if (document.querySelector('script[src*="adsafeprotected"]') ||
-        htmlContent.includes('ias') ||
-        htmlContent.includes('integralads')) {
+        /\b(integralads|adsafeprotected)\b/.test(htmlContent) || window.__iasPET) {
       technologies.push({
         name: 'Integral Ad Science',
         type: 'Ad Verification',
@@ -1752,8 +1766,7 @@ function detectTechnologies() {
     }
     
     // Open Graph
-    if (document.querySelector('meta[property^="og:"]') ||
-        htmlContent.includes('og:')) {
+    if (document.querySelector('meta[property^="og:"]')) {
       technologies.push({
         name: 'Open Graph',
         type: 'Meta Protocol',
@@ -1774,8 +1787,7 @@ function detectTechnologies() {
     // Webpack
     if (window.webpackJsonp ||
         window.__webpack_require__ ||
-        htmlContent.includes('webpack') ||
-        document.querySelector('script[src*="bundle.js"]')) {
+        Object.keys(window).some((k) => /^webpackChunk/.test(k))) {
       
       let version = null;
       const webpackVersionMatch = htmlContent.match(/webpack\/([\d.]+)/i);
@@ -1828,13 +1840,13 @@ function detectTechnologies() {
       addIfNotExists('Bootstrap', 'CSS Framework');
     if (src.includes('gsap.min.js') || src.includes('TweenMax'))
       addIfNotExists('GSAP', 'Animation');
-    if (src.includes('firebase'))
+    if (/gstatic\.com\/firebasejs\/|\/__\/firebase\//.test(src))
       addIfNotExists('Firebase', 'Database');
     if (src.includes('emotion'))
       addIfNotExists('Emotion', 'CSS-in-JS');
     if (src.includes('lottie'))
       addIfNotExists('LottieFiles', 'Animation');
-    if (src.includes('next'))
+    if (/\/_next\/static\//.test(src))
       addIfNotExists('Next.js', 'Framework');
   });
   
