@@ -10,6 +10,8 @@
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT">
 </p>
 
+<p align="center"><b>🌐 <a href="https://umeglio.github.io/TechDetectorPro/">Sito del progetto / Project site</a></b></p>
+
 <p align="center"><b>🇮🇹 <a href="#-italiano">Italiano</a> · 🇬🇧 <a href="#-english">English</a></b></p>
 
 <p align="center">
@@ -114,7 +116,8 @@ sudo ./tools/php-vuln-check.sh --csv > inventario.csv
 ├── phpprobe.js          individuazione della versione PHP
 ├── popup.html/.css/.js  interfaccia
 ├── icons/               icon.svg (sorgente) e PNG 16/32/48/128
-├── screenshots/         immagini del README
+├── index.html           pagina di presentazione (GitHub Pages)
+├── screenshots/         immagini del README e del sito
 └── tools/               script shell (verifiche PHP, icone, pacchetto zip)
 ```
 
