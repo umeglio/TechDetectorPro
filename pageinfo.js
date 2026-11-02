@@ -64,6 +64,7 @@ function collectPageInfo() {
 
   return {
     url: location.href,
+    title: document.title,
     protocol: nav.nextHopProtocol || null,
     transferSize: nav.transferSize || null,
     encodedBodySize: nav.encodedBodySize || null,
