@@ -10,7 +10,8 @@ Autore: Umberto Meglio · realizzato con il supporto di Claude di Anthropic
 - README riscritto in italiano e inglese, organizzato per funzione.
 - Corretto Google Publisher Tag: "googletag" compare anche in "googletagmanager", quindi ogni sito con Tag Manager risultava avere GPT.
 - Screenshot rigenerati con la versione 2.2.1.
-- Pagina di presentazione per GitHub Pages (`index.html`, italiano/inglese, tema chiaro/scuro).
+- Pagina di presentazione per GitHub Pages (`index.html`, italiano/inglese, stile miraFONT e palette miraNTIS).
+- Icona ridisegnata nei colori miraNTIS: fondo blu notte, parentesi verde acqua, lente chiara.
 
 ## 2.2.0
 - Regole di rilevamento basate su prove tecniche: PWA (manifest + service worker attivo), Firebase (SDK reale), Google Analytics (ID reali), Integral Ad Science, Open Graph, Webpack, Next.js.
