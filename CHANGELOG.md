@@ -2,6 +2,10 @@
 
 Autore: Umberto Meglio · realizzato con il supporto di Claude di Anthropic
 
+## 2.3.2
+- Testi del popup e paragrafi del sito in **miraFONT Text**, il nuovo taglio da lettura di miraFONT (stessa matrice, proporzioni da testo). miraFONT Spline resta per titoli, schede ed etichette; versioni e CVE in monospaziato.
+- Screenshot rigenerati.
+
 ## 2.3.1
 - Leggibilità del popup: miraFONT resta per titolo, schede, intestazioni ed etichette di gravità; testi lunghi, numeri e codici CVE usano caratteri di sistema pensati per la lettura a piccole dimensioni.
 - Badge numerici (es. il conteggio sulla scheda Sicurezza) centrati con flexbox, indipendenti dalle metriche verticali del font.

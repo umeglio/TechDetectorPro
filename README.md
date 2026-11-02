@@ -3,7 +3,7 @@
 <h1 align="center">Tech Detector Pro</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.3.1-green.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-2.3.2-green.svg" alt="Version">
   <img src="https://img.shields.io/badge/manifest-v3-orange.svg" alt="Manifest V3">
   <img src="https://img.shields.io/badge/Chrome%20%2F%20Edge-116%2B-brightgreen.svg" alt="Chrome / Edge 116+">
   <img src="https://img.shields.io/badge/lingue%20%2F%20languages-12-3df5b0.svg" alt="12 languages">
@@ -123,7 +123,7 @@ sudo ./tools/php-vuln-check.sh --csv > inventario.csv
 ├── i18n.js              gestione delle lingue
 ├── locales/             testi dell'interfaccia, un file per lingua
 ├── _locales/            nome e descrizione dell'estensione per il Chrome Web Store
-├── fonts/               miraFONT (CC0), incluso per funzionare senza rete
+├── fonts/               miraFONT Spline e Text (CC0), inclusi per funzionare senza rete
 ├── icons/               icon.svg (sorgente) e PNG 16/32/48/128
 ├── index.html           pagina di presentazione (GitHub Pages)
 ├── screenshots/it, en/  immagini del README e del sito, per lingua
