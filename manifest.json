@@ -1,21 +1,40 @@
 {
   "manifest_version": 3,
   "name": "Tech Detector Pro",
-  "version": "1.0",
-  "description": "Rileva le tecnologie utilizzate su un sito web, inclusi server, database, framework, CDN e molto altro",
+  "version": "2.0.0",
+  "description": "Detects web technologies, server software & versions (Apache, nginx, PHP...), HTTP headers, security grade and outdated components with known CVEs.",
+  "author": "Umberto Meglio",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "action": {
     "default_popup": "popup.html",
+    "default_title": "Tech Detector Pro",
     "default_icon": {
       "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     }
   },
+  "background": {
+    "service_worker": "background.js"
+  },
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "storage",
+    "webRequest"
   ],
   "host_permissions": [
-    "<all_urls>"
-  ]
+    "http://*/*",
+    "https://*/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
 }
