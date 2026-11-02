@@ -172,6 +172,8 @@ function mergeTechs(dom, fromHeaders, libs) {
     if (name === 'AngularJS') { const a = find('Angular'); if (a && !a.version) { a.name = 'AngularJS'; } }
     push({ name: n, version, type: 'variabile globale', category: LIB_CATEGORY[n] || 'JavaScript Library' });
   });
+  const node = out.find((t) => ['Next.js', 'Nuxt', 'Nuxt.js', 'Express'].includes(t.name));
+  if (node && !find('Node.js')) out.push({ name: 'Node.js', version: null, type: 'dedotto da ' + node.name, category: 'Linguaggio di programmazione', fromHeaders: false });
   return out;
 }
 
@@ -223,7 +225,20 @@ function renderServer(rows, capture) {
 
 function renderPhpBox(root) {
   const php = REPORT.php;
-  if (!php || (!php.isPhp && !php.version)) return;
+  if (!php) return;
+  if (php.notPhp) {
+    root.appendChild(el('div', 'category', '🐘 Versione PHP'));
+    const box = el('div', 'php-box');
+    const head = el('div', 'php-head');
+    head.append(el('span', 'php-ver', 'PHP non utilizzato'), el('span', 'conf ok', 'backend: ' + php.notPhp));
+    box.appendChild(head);
+    const ul = el('ul', 'evidence');
+    php.evidence.forEach((e) => ul.appendChild(el('li', null, e)));
+    box.appendChild(ul);
+    root.appendChild(box);
+    return;
+  }
+  if (!php.isPhp && !php.version) return;
   root.appendChild(el('div', 'category', '🐘 Versione PHP'));
   const box = el('div', 'php-box');
   const conf = { certa: 'ok', probabile: 'ok', stima: 'warn', minimo: 'warn' }[php.confidence] || 'ko';

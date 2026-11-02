@@ -50,6 +50,24 @@ const MIN_PHP = [
   { tech: 'WordPress', rules: [['6.6', '7.2.24'], ['6.0', '5.6.20']] }
 ];
 
+/* Tecnologie che indicano un backend diverso da PHP */
+const NON_PHP_BACKENDS = [
+  { tech: 'Next.js', backend: 'Node.js (Next.js)', note: 'le pagine sono generate da Node.js, non da PHP' },
+  { tech: 'Nuxt', backend: 'Node.js (Nuxt)', note: 'le pagine sono generate da Node.js' },
+  { tech: 'Nuxt.js', backend: 'Node.js (Nuxt)', note: 'le pagine sono generate da Node.js' },
+  { tech: 'Gatsby', backend: 'sito statico (Gatsby)', note: 'HTML pre-generato, nessun linguaggio lato server' },
+  { tech: 'Express', backend: 'Node.js (Express)', note: 'header X-Powered-By: Express' },
+  { tech: 'ASP.NET', backend: 'ASP.NET (.NET)', note: 'header o cookie ASP.NET' },
+  { tech: 'Java Servlet', backend: 'Java', note: 'cookie JSESSIONID' },
+  { tech: 'Apache Tomcat', backend: 'Java (Tomcat)', note: 'banner del server' },
+  { tech: 'Django', backend: 'Python (Django)', note: 'cookie csrftoken' },
+  { tech: 'Ruby on Rails', backend: 'Ruby (Rails)', note: 'cookie di sessione Rails' },
+  { tech: 'Ruby on Rails / Rack', backend: 'Ruby (Rack)', note: 'header X-Runtime' },
+  { tech: 'Hugo', backend: 'sito statico (Hugo)', note: 'HTML pre-generato' },
+  { tech: 'Jekyll', backend: 'sito statico (Jekyll)', note: 'HTML pre-generato' },
+  { tech: 'GitHub Pages', backend: 'sito statico (GitHub Pages)', note: 'hosting statico' }
+];
+
 const sameOrigin = (u) => new URL(u).origin;
 const rnd = () => Math.random().toString(36).slice(2, 10);
 
@@ -106,6 +124,15 @@ async function detectPhpVersion(ctx) {
   const has = (n) => ctx.techs.find((t) => t.name.toLowerCase() === n.toLowerCase());
   const cms = ['WordPress', 'Drupal', 'Joomla', 'Magento', 'PrestaShop', 'Laravel', 'Symfony', 'Typo3', 'CodeIgniter', 'phpBB', 'MediaWiki', 'Moodle', 'Nextcloud'].filter(has);
   let isPhp = !!has('PHP') || cms.length > 0 || /\.php(\?|$)/i.test(ctx.url);
+
+  // backend chiaramente non PHP: inutile (e fuorviante) cercare una versione
+  if (!isPhp) {
+    const other = NON_PHP_BACKENDS.find((b) => has(b.tech));
+    if (other) {
+      evidence.push(`rilevato ${other.tech}: ${other.note}`);
+      return { version: null, confidence: null, source: null, evidence, isPhp: false, notPhp: other.backend };
+    }
+  }
   const found = (version, confidence, source) => ({ version, confidence, source, evidence, isPhp: true });
 
   // 0. già presente negli header della pagina?
