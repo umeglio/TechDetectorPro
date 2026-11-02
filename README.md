@@ -15,7 +15,13 @@
 
 Estensione per Chrome/Edge che analizza il sito aperto e mostra **quali tecnologie usa, quale software gira sul server (con versione), come è configurato e quali componenti sono obsoleti o esposti a CVE note**. Tutta l'analisi avviene nel browser: nessun dato viene inviato a terzi.
 
-<p align="center"><img src="screenshots/security-tab.png" alt="Scheda Sicurezza" width="420"></p>
+### Screenshot
+<p align="center">
+  <img src="screenshots/tech-tab.png" alt="Tecnologie / Technologies" width="230">
+  <img src="screenshots/server-tab.png" alt="Server" width="230">
+  <img src="screenshots/security-tab.png" alt="Sicurezza / Security" width="230">
+  <img src="screenshots/headers-tab.png" alt="Header / Headers" width="230">
+</p>
 
 ### Novità della versione 2.0
 | Area | Cosa fa |
@@ -72,6 +78,14 @@ Le pull request sono benvenute, in particolare per nuove regole in `VULN_RULES` 
 ## 🇬🇧 English
 
 A Chrome/Edge extension that inspects the current website and shows **which technologies it uses, which server software (and version) runs behind it, how it is configured and which components are outdated or affected by known CVEs**. Everything runs locally in the browser; no data is sent anywhere.
+
+### Screenshots
+<p align="center">
+  <img src="screenshots/tech-tab.png" alt="Tecnologie / Technologies" width="230">
+  <img src="screenshots/server-tab.png" alt="Server" width="230">
+  <img src="screenshots/security-tab.png" alt="Sicurezza / Security" width="230">
+  <img src="screenshots/headers-tab.png" alt="Header / Headers" width="230">
+</p>
 
 ### What's new in 2.0
 | Area | What it does |
