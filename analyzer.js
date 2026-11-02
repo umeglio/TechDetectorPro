@@ -179,7 +179,11 @@ function analyzeHeaders(capture, page) {
     const key = Object.keys(COOKIE_TECH).find((k) => n === k || n.startsWith(k));
     if (key && COOKIE_TECH[key]) add(COOKIE_TECH[key], null, 'cookie ' + n);
   });
-  if (cookieNames.size) row('Cookie rilevati', Array.from(cookieNames).slice(0, 15).join(', '));
+  if (cookieNames.size) {
+    const names = Array.from(cookieNames);
+    const short = names.slice(0, 12).map((n) => (n.length > 28 ? n.slice(0, 26) + '…' : n));
+    row('Cookie rilevati', `${names.length}: ${short.join(', ')}${names.length > 12 ? ` (+${names.length - 12})` : ''}`);
+  }
 
   return { server, techs, security: auditSecurity(h, capture, page, setCookie), headers: capture ? capture.headers : [] };
 }
@@ -195,9 +199,20 @@ function auditSecurity(h, capture, page, setCookie) {
   const maxAge = hsts ? parseInt((hsts.match(/max-age=(\d+)/) || [])[1] || '0', 10) : 0;
   c('Strict-Transport-Security', !!hsts && maxAge >= 15552000, hsts ? `${hsts}${maxAge < 15552000 ? ' (max-age < 180 giorni)' : ''}` : 'assente', 2);
   const csp = h['content-security-policy'];
-  c('Content-Security-Policy', !!csp && !/unsafe-inline|unsafe-eval|\*/.test(csp.replace(/'nonce-[^']+'|'strict-dynamic'/g, '')),
-    csp ? (/unsafe-inline|unsafe-eval/.test(csp) ? 'presente ma con unsafe-inline/unsafe-eval' : 'presente') :
-      (h['content-security-policy-report-only'] ? 'solo report-only' : 'assente'), 2);
+  const cspIssues = [];
+  if (csp) {
+    const scriptSrc = (csp.match(/(?:^|;)\s*script-src\s+([^;]*)/i) || csp.match(/(?:^|;)\s*default-src\s+([^;]*)/i) || [])[1];
+    if (!scriptSrc) cspIssues.push('nessuna direttiva script-src/default-src (non limita gli script)');
+    else {
+      const strict = /'strict-dynamic'|'nonce-|'sha(256|384|512)-/.test(scriptSrc);
+      if (/'unsafe-inline'/.test(scriptSrc) && !strict) cspIssues.push("script-src con 'unsafe-inline'");
+      if (/'unsafe-eval'/.test(scriptSrc)) cspIssues.push("script-src con 'unsafe-eval'");
+      if (/(^|\s)(\*|https?:|data:)(\s|$)/.test(scriptSrc)) cspIssues.push('script-src con sorgenti jolly (*, https:, data:)');
+    }
+  }
+  c('Content-Security-Policy', !!csp && !cspIssues.length,
+    csp ? (cspIssues.length ? 'presente ma debole: ' + cspIssues.join('; ') : 'presente e restrittiva sugli script') :
+      (h['content-security-policy-report-only'] ? 'solo report-only (non applicata)' : 'assente'), 2);
   c('X-Content-Type-Options', /nosniff/i.test(h['x-content-type-options'] || ''), h['x-content-type-options'] || 'assente');
   c('Protezione clickjacking', !!h['x-frame-options'] || /frame-ancestors/.test(csp || ''),
     h['x-frame-options'] || (/frame-ancestors/.test(csp || '') ? 'CSP frame-ancestors' : 'assente'));
@@ -301,6 +316,9 @@ const VULN_RULES = [
     msg: 'React 19 con Server Components vulnerabili a RCE non autenticata ("React2Shell").', cves: ['CVE-2025-55182'] },
   { tech: 'Next.js', test: (v) => (branch(v, 1) === '15' && lt(v, '15.2.3')) || (branch(v, 1) === '14' && lt(v, '14.2.25')) || (branch(v, 1) === '13' && lt(v, '13.5.9')) || lt(v, '12.3.5'),
     severity: 'critical', msg: 'Next.js: bypass dell\'autorizzazione nel middleware.', cves: ['CVE-2025-29927'] },
+  { tech: 'Next.js', test: (v) => [['15.0', '15.0.5'], ['15.1', '15.1.9'], ['15.2', '15.2.6'], ['15.3', '15.3.6'], ['15.4', '15.4.8'], ['15.5', '15.5.7'], ['16.0', '16.0.7']]
+      .some(([b, fix]) => branch(v) === b && lt(v, fix)),
+    severity: 'critical', msg: 'Next.js App Router con React Server Components vulnerabili a RCE non autenticata ("React2Shell").', cves: ['CVE-2025-55182', 'CVE-2025-66478'] },
   { tech: 'DOMPurify', test: (v) => lt(v, '3.2.4'), severity: 'medium', msg: 'DOMPurify < 3.2.4: bypass mXSS.', cves: ['CVE-2024-45801', 'CVE-2025-26791'] },
   { tech: 'Axios', test: (v) => lt(v, '1.8.2'), severity: 'medium', msg: 'Axios < 1.8.2: SSRF / leak credenziali con URL assoluti.', cves: ['CVE-2025-27152', 'CVE-2023-45857'] },
   { tech: 'Prototype', test: () => true, severity: 'medium', msg: 'Prototype.js non è più mantenuto.' },

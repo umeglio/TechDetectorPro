@@ -120,8 +120,10 @@ function detectTechnologies() {
     }
     
     // Verifica Next.js anche come web server
-    if (document.getElementById('__next') || 
-        document.querySelector('script[data-next-page]') ||
+    const nextAppRouter = !!window.__next_f || !!document.querySelector('script[src*="/_next/static/"]') &&
+      Array.from(document.scripts).some((s) => !s.src && s.textContent.includes('self.__next_f'));
+    if (document.getElementById('__next') || nextAppRouter ||
+        document.querySelector('script[data-next-page], script[src*="/_next/static/"]') ||
         htmlContent.includes('__NEXT_DATA__')) {
       
       let version = null;
@@ -145,7 +147,7 @@ function detectTechnologies() {
       technologies.push({
         name: 'Next.js',
         version: version,
-        type: 'Framework Server',
+        type: nextAppRouter ? 'App Router (React Server Components)' : 'Framework Server',
         category: 'Web Server'
       });
     }
@@ -550,8 +552,10 @@ function detectTechnologies() {
     }
     
     // Next.js
-    if (document.getElementById('__next') || 
-        document.querySelector('script[data-next-page]') ||
+    const nextAppRouter = !!window.__next_f || !!document.querySelector('script[src*="/_next/static/"]') &&
+      Array.from(document.scripts).some((s) => !s.src && s.textContent.includes('self.__next_f'));
+    if (document.getElementById('__next') || nextAppRouter ||
+        document.querySelector('script[data-next-page], script[src*="/_next/static/"]') ||
         htmlContent.includes('__NEXT_DATA__')) {
       
       let version = null;
@@ -1139,9 +1143,17 @@ function detectTechnologies() {
     const htmlContent = document.documentElement.outerHTML;
     
     // PHP (già parzialmente coperto in altri rilevamenti)
-    if (document.querySelector('meta[http-equiv="X-Powered-By"][content*="PHP"]') ||
-        htmlContent.includes('php') ||
-        document.cookie.includes('PHPSESSID')) {
+    // indizi forti: URL .php dello stesso sito, cookie di sessione PHP, meta X-Powered-By
+    // (prima bastava la parola "php" in qualunque punto dell'HTML: falsi positivi)
+    const samePhp = Array.from(document.querySelectorAll('a[href], form[action], script[src], link[href], iframe[src]')).some((n) => {
+      try {
+        const u = new URL(n.getAttribute('href') || n.getAttribute('action') || n.getAttribute('src'), location.href);
+        return u.hostname === location.hostname && /\.php$/i.test(u.pathname);
+      } catch (e) { return false; }
+    });
+    if (document.querySelector('meta[http-equiv="X-Powered-By"][content*="PHP" i]') ||
+        samePhp || /\.php$/i.test(location.pathname) ||
+        /(^|;\s*)PHPSESSID=/.test(document.cookie)) {
       
       let version = null;
       const phpVersionMatch = htmlContent.match(/PHP\/([\d.]+)/i);
@@ -1403,8 +1415,10 @@ function detectTechnologies() {
     }
     
     // Next.js (già rilevato nei framework JS, ma aggiungiamo anche qui)
-    if (document.getElementById('__next') || 
-        document.querySelector('script[data-next-page]') ||
+    const nextAppRouter = !!window.__next_f || !!document.querySelector('script[src*="/_next/static/"]') &&
+      Array.from(document.scripts).some((s) => !s.src && s.textContent.includes('self.__next_f'));
+    if (document.getElementById('__next') || nextAppRouter ||
+        document.querySelector('script[data-next-page], script[src*="/_next/static/"]') ||
         htmlContent.includes('__NEXT_DATA__')) {
       
       let version = null;
