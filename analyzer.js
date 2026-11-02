@@ -133,6 +133,11 @@ function analyzeHeaders(capture, page) {
   if (h['x-magento-cache-debug'] || h['x-magento-tags']) add('Magento', null, 'header');
   if (h['x-litespeed-cache']) add('LiteSpeed Cache', null, 'header');
   if (h['x-varnish']) add('Varnish', null, 'header X-Varnish');
+  // prodotti proprietari dichiarati in un header qualsiasi (es. "miraCACHE/1.2" in X-Cache o Via)
+  Object.entries(h).forEach(([k, v]) => {
+    const m = String(v).match(/\bmiraCACHE(?:\/([\d.]+))?/i);
+    if (m) add('miraCACHE', m[1] || null, 'header ' + k);
+  });
   if (h['x-turbo-charged-by']) add(h['x-turbo-charged-by'], null, 'header');
   if (h['x-runtime']) add('Ruby on Rails / Rack', null, 'header X-Runtime');
   if (h['x-nextjs-cache'] || h['x-nextjs-prerender'] || h['x-nextjs-stale-time']) add('Next.js', null, 'header');
@@ -152,7 +157,7 @@ function analyzeHeaders(capture, page) {
   const cats = { 'Cloudflare': 'CDN', 'Amazon CloudFront': 'CDN', 'Fastly': 'CDN', 'Azure Front Door': 'CDN', 'Vercel': 'PaaS',
     'Netlify': 'PaaS', 'GitHub Pages': 'PaaS', 'Google Cloud Storage': 'PaaS', 'Kong': 'Proxy', 'Sucuri WAF': 'Security',
     'Imperva': 'Security', 'Drupal': 'CMS', 'WordPress': 'CMS', 'Shopify': 'E-commerce', 'Magento': 'E-commerce',
-    'LiteSpeed Cache': 'Cache Tool', 'Ruby on Rails / Rack': 'Framework Backend', 'ASP.NET MVC': 'Framework Backend' };
+    'LiteSpeed Cache': 'Cache Tool', 'miraCACHE': 'Cache Tool', 'Ruby on Rails / Rack': 'Framework Backend', 'ASP.NET MVC': 'Framework Backend' };
   techs.forEach((t) => { if (cats[t.name]) t.category = cats[t.name]; });
 
   if (h['via']) row('Via (proxy)', h['via']);

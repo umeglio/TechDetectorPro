@@ -77,6 +77,3 @@ main { max-height: 470px; overflow-y: auto; }
 .evidence { margin: 6px 0; padding-left: 16px; font-size: 11px; color: var(--muted); }
 .btn { margin-top: 4px; border: 1px solid var(--accent); background: none; color: var(--accent); border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 12px; }
 .btn:disabled { opacity: .6; cursor: default; }
-.unconfirmed { margin-top: 14px; }
-.unconfirmed summary { cursor: pointer; font-weight: 600; font-size: 12px; color: var(--muted); }
-.item.weak { opacity: .7; }

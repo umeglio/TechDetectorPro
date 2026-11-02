@@ -64,12 +64,12 @@ async function init() {
 
   const analysis = analyzeHeaders(capture, page);
   const techs = mergeTechs(domTechs || [], analysis.techs, (page && page.libs) || {});
-  const unconfirmed = techs.unconfirmed || [];
+  const discarded = techs.discarded || [];
   REPORT = {
     generatedAt: new Date().toISOString(), url: tab.url, ip: capture && capture.ip,
     technologies: techs, server: analysis.server, security: analysis.security,
     vulnerabilities: [], headers: analysis.headers, headerSource: capture && capture.source, php: null,
-    unconfirmed
+    discardedTextOnly: discarded
   };
   CTX = { url: tab.url, capture };
 
@@ -178,10 +178,12 @@ function mergeTechs(dom, fromHeaders, libs) {
   const node = out.find((t) => ['Next.js', 'Nuxt', 'Nuxt.js', 'Express'].includes(t.name));
   if (node && !find('Node.js')) out.push({ name: 'Node.js', version: null, type: 'dedotto da ' + node.name, category: 'Linguaggio di programmazione', fromHeaders: false });
 
-  // Il browser non vede database, linguaggio o web server: se una di queste tecnologie
-  // arriva solo da una parola trovata nell'HTML (e non da header/cookie) è un indizio, non un rilevamento.
+  // Il browser non vede database, cache, linguaggio o web server: se una di queste tecnologie
+  // arriva solo da una parola trovata nel testo della pagina (e non da header/cookie) NON è un
+  // rilevamento. Esempio reale: un'applicazione di monitoraggio che elenca "Redis" tra i servizi
+  // veniva marcata come "usa Redis". Queste voci vengono scartate.
   const confirmed = out.filter((t) => !(SERVER_SIDE.has(t.category) && !t.fromHeaders && !STRONG_DOM.has(t.name) && !t.type.startsWith('dedotto')));
-  confirmed.unconfirmed = out.filter((t) => !confirmed.includes(t));
+  confirmed.discarded = out.filter((t) => !confirmed.includes(t)).map((t) => t.name);
   return confirmed;
 }
 
@@ -192,7 +194,6 @@ const STRONG_DOM = new Set(['Next.js', 'Nuxt', 'Nuxt.js', 'PHP', 'Firebase', 'No
 /* ---------- rendering ---------- */
 function renderTech(techs, vulns) {
   const root = $('#tab-tech');
-  setTimeout(() => renderUnconfirmed(root), 0);
   $('#cnt-tech').textContent = techs.length;
   if (!techs.length) { root.appendChild(el('div', 'empty', 'Nessuna tecnologia rilevata')); return; }
   const vulnTech = new Set(vulns.filter((v) => v.severity !== 'info').map((v) => v.tech));
@@ -217,23 +218,6 @@ function renderTech(techs, vulns) {
       root.appendChild(it);
     });
   });
-}
-
-function renderUnconfirmed(root) {
-  const list = (REPORT && REPORT.unconfirmed) || [];
-  if (!list.length) return;
-  const det = el('details', 'unconfirmed');
-  const sum = el('summary', null, `❔ Indizi non confermati (${list.length})`);
-  det.appendChild(sum);
-  det.appendChild(el('div', 'note', 'Tecnologie lato server citate nel testo della pagina ma non confermate da header o cookie: dal browser non si possono verificare.'));
-  list.sort((a, b) => a.name.localeCompare(b.name)).forEach((t) => {
-    const it = el('div', 'item weak');
-    it.append(el('span', 'name', t.name));
-    if (t.version) it.append(el('span', 'badge ver', t.version));
-    it.append(el('span', 'type', t.category));
-    det.appendChild(it);
-  });
-  root.appendChild(det);
 }
 
 function renderServer(rows, capture) {

@@ -151,13 +151,17 @@ async function detectPhpVersion(ctx) {
   if (has('Magento')) light.push(`${origin}/customer/account/login/`);
   if (has('PrestaShop')) light.push(`${origin}/index.php?controller=authentication`);
 
-  const results = await Promise.all(light.map((u) => probe(u)));
+  // richiesta di controllo: un percorso inesistente SENZA .php. Se risponde 200 il sito ha un
+  // "catch-all" (SPA, router applicativo) e lo stato delle risposte .php non prova nulla.
+  const [control, ...results] = await Promise.all([probe(`${origin}/${rnd()}-${rnd()}`), ...light.map((u) => probe(u))]);
+  const catchAll = !!control && control.status === 200;
+  if (catchAll) evidence.push('il sito risponde 200 anche a percorsi inesistenti (catch-all): lo stato HTTP dei .php non è indicativo');
   for (const r of results) {
     if (!r) continue;
     const v = versionFromHeaders(r.headers);
     if (v) { evidence.push(`${r.url} → ${r.headers[v.header]}`); return found(v.version, 'certa', `header ${v.header} di ${new URL(r.url).pathname}`); }
     if (/PHPSESSID|laravel_session|ci_session/.test(r.headers['set-cookie'] || '') || /^PHP\b/i.test(r.headers['x-powered-by'] || '')) isPhp = true;
-    if (r.status && r.url.endsWith('.php') && r.status !== 404 && r.status !== 403 && r.status < 500) isPhp = true;
+    if (!catchAll && r.status === 200 && /\/index\.php$/.test(r.url) && /text\/html/.test(r.type)) isPhp = true;
   }
   evidence.push('X-Powered-By non esposto (probabile expose_php = Off o header rimosso dal proxy)');
 

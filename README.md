@@ -1,7 +1,7 @@
 # Tech Detector Pro
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-2.2.0-green.svg)
+![Version](https://img.shields.io/badge/version-2.2.1-green.svg)
 ![Manifest](https://img.shields.io/badge/manifest-v3-orange.svg)
 ![Chrome](https://img.shields.io/badge/Chrome%20%2F%20Edge-116%2B-brightgreen.svg)
 
