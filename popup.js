@@ -64,19 +64,60 @@ async function init() {
 
   const analysis = analyzeHeaders(capture, page);
   const techs = mergeTechs(domTechs || [], analysis.techs, (page && page.libs) || {});
-  const vulns = checkVulnerabilities(techs);
-
   REPORT = {
     generatedAt: new Date().toISOString(), url: tab.url, ip: capture && capture.ip,
     technologies: techs, server: analysis.server, security: analysis.security,
-    vulnerabilities: vulns, headers: analysis.headers, headerSource: capture && capture.source
+    vulnerabilities: [], headers: analysis.headers, headerSource: capture && capture.source, php: null
   };
+  CTX = { url: tab.url, capture };
 
+  REPORT.php = await detectPhpVersion({ url: tab.url, techs, capture, deep: false });
+  applyPhp();
   $('#loading').style.display = 'none';
-  renderTech(techs, vulns);
-  renderServer(analysis.server, capture);
-  renderSecurity(analysis.security, vulns);
-  renderHeaders(analysis.headers, capture);
+  renderAll();
+}
+
+let CTX = null;
+
+/** Inserisce la versione PHP trovata tra le tecnologie e ricalcola le vulnerabilità. */
+function applyPhp() {
+  const php = REPORT.php;
+  const techs = REPORT.technologies;
+  if (php && (php.version || php.isPhp)) {
+    let t = techs.find((x) => x.name === 'PHP');
+    if (!t) { t = { name: 'PHP', version: null, type: '', category: 'Linguaggio di programmazione', fromHeaders: true }; techs.push(t); }
+    if (php.version && (!t.version || php.confidence === 'certa')) {
+      t.version = php.version;
+      t.type = `${php.confidence} · ${php.source}`;
+    } else if (!t.version) t.type = 'versione nascosta';
+  }
+  // le stime e i minimi non generano avvisi CVE come se fossero certi
+  const forVulns = techs.map((t) => (t.name === 'PHP' && php && php.confidence && !['certa', 'probabile'].includes(php.confidence))
+    ? Object.assign({}, t, { version: null }) : t);
+  REPORT.vulnerabilities = checkVulnerabilities(forVulns);
+  if (php && php.version && php.confidence === 'stima') {
+    const est = checkVulnerabilities([{ name: 'PHP', version: php.version.replace(/[^\d.].*$/, '') }]);
+    est.forEach((v) => { v.msg = '[stima dalla distribuzione] ' + v.msg; if (v.severity === 'critical') v.severity = 'high'; });
+    REPORT.vulnerabilities = REPORT.vulnerabilities.concat(est);
+  }
+}
+
+function renderAll() {
+  ['tech', 'server', 'security', 'headers'].forEach((n) => { $('#tab-' + n).textContent = ''; });
+  renderTech(REPORT.technologies, REPORT.vulnerabilities);
+  renderServer(REPORT.server, CTX.capture);
+  renderSecurity(REPORT.security, REPORT.vulnerabilities);
+  renderHeaders(REPORT.headers, CTX.capture);
+}
+
+async function deepPhpSearch(btn) {
+  btn.disabled = true;
+  btn.textContent = 'Ricerca in corso…';
+  REPORT.php = await detectPhpVersion({ url: CTX.url, techs: REPORT.technologies, capture: CTX.capture, deep: true });
+  REPORT.php.deepDone = true;
+  applyPhp();
+  renderAll();
+  switchTab('server');
 }
 
 function switchTab(name) {
@@ -174,9 +215,36 @@ function renderServer(rows, capture) {
     kv.appendChild(v);
   });
   root.appendChild(kv);
+  renderPhpBox(root);
   if (capture && capture.source !== 'navigazione')
     root.appendChild(el('div', 'note', 'Header ottenuti con una richiesta di verifica: ricarica la pagina per l\'IP del server e gli header originali.'));
   if (!capture) root.appendChild(el('div', 'note', 'Header HTTP non disponibili: ricarica la pagina.'));
+}
+
+function renderPhpBox(root) {
+  const php = REPORT.php;
+  if (!php || (!php.isPhp && !php.version)) return;
+  root.appendChild(el('div', 'category', '🐘 Versione PHP'));
+  const box = el('div', 'php-box');
+  const conf = { certa: 'ok', probabile: 'ok', stima: 'warn', minimo: 'warn' }[php.confidence] || 'ko';
+  const head = el('div', 'php-head');
+  head.append(el('span', 'php-ver', php.version || 'non individuata'));
+  if (php.confidence) head.append(el('span', 'conf ' + conf, php.confidence));
+  box.appendChild(head);
+  if (php.source) box.appendChild(el('div', 'd', 'Fonte: ' + php.source));
+  if (php.evidence.length) {
+    const ul = el('ul', 'evidence');
+    php.evidence.forEach((e) => ul.appendChild(el('li', null, e)));
+    box.appendChild(ul);
+  }
+  if (php.confidence !== 'certa' && !php.deepDone) {
+    const b = el('button', 'btn', '🔎 Ricerca approfondita');
+    b.title = 'Cerca pagine phpinfo() dimenticate, file di Composer esposti e altre tracce (circa 20 richieste al sito)';
+    b.addEventListener('click', () => deepPhpSearch(b));
+    box.appendChild(b);
+    box.appendChild(el('div', 'note', 'Esegue richieste aggiuntive al sito: usala su siti tuoi o per cui hai autorizzazione.'));
+  }
+  root.appendChild(box);
 }
 
 function renderSecurity(sec, vulns) {

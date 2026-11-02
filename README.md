@@ -1,7 +1,7 @@
 # Tech Detector Pro
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-2.0.0-green.svg)
+![Version](https://img.shields.io/badge/version-2.1.0-green.svg)
 ![Manifest](https://img.shields.io/badge/manifest-v3-orange.svg)
 ![Chrome](https://img.shields.io/badge/Chrome%20%2F%20Edge-116%2B-brightgreen.svg)
 
@@ -37,6 +37,20 @@ Estensione per Chrome/Edge che analizza il sito aperto e mostra **quali tecnolog
 
 Restano attivi tutti i rilevamenti precedenti su DOM e script: CMS, framework JS, librerie, CSS framework, analytics, tag manager, advertising, CDN, PaaS, static site generator, PWA, font.
 
+### Come individua la versione di PHP (2.1)
+Nella maggior parte dei siti la versione di PHP **non è dichiarata** (`expose_php = Off`, oppure un proxy o CDN rimuove `X-Powered-By`). Per questo l'estensione la cerca a più livelli e indica sempre **fonte** e **affidabilità**:
+
+| Livello | Tecnica | Affidabilità |
+|---|---|---|
+| 1 · automatico | `X-Powered-By` sulle risposte generate da PHP: URL con cache-buster per saltare la cache del CDN, `/index.php`, uno script `.php` inesistente (con nginx + PHP-FPM la pagina "File not found." la produce PHP), endpoint del CMS (`wp-login.php`, `xmlrpc.php`, `/user/login`…) | certa |
+| 2 · su richiesta | Pulsante **🔎 Ricerca approfondita**: pagine `phpinfo()` dimenticate (`info.php`, `phpinfo.php`, `test.php`…), file Composer esposti (`composer.lock`, `vendor/composer/platform_check.php`), easter egg dei PHP < 5.5 | certa / probabile / minimo |
+| 3 · stima | Pacchetto Apache/nginx della distribuzione → PHP di default (es. `Apache/2.4.52 (Ubuntu)` = Ubuntu 22.04 = PHP 8.1) | stima |
+| 4 · minimo | Requisito del CMS/framework (es. Laravel 11 → PHP ≥ 8.2, Drupal 11 → PHP ≥ 8.3) | minimo |
+
+Le stime non producono avvisi CVE "critici" come se fossero certe. La ricerca approfondita fa circa 20 richieste al sito: usala su siti tuoi o per cui hai l'autorizzazione.
+
+<p align="center"><img src="screenshots/php-detection.png" alt="Versione PHP" width="360"></p>
+
 ### Installazione
 1. `git clone https://github.com/umeglio/TechDetectorPro.git`
 2. Apri `chrome://extensions` (o `edge://extensions`) e attiva la **Modalità sviluppatore**
@@ -66,6 +80,7 @@ Apri un sito e clicca sull'icona. Il badge rosso sulla scheda **Sicurezza** indi
 ├── detector.js     rilevamento tecnologie da DOM/script (eseguito nella pagina)
 ├── pageinfo.js     versioni librerie, performance, cookie, SRI (eseguito nella pagina)
 ├── analyzer.js     analisi header, audit sicurezza, regole CVE/EOL
+├── phpprobe.js     individuazione della versione PHP (4 livelli)
 ├── popup.html/css/js  interfaccia
 └── icons/          16, 32, 48, 128 px
 ```
@@ -100,6 +115,18 @@ A Chrome/Edge extension that inspects the current website and shows **which tech
 | **UI** | Four tabs (Technologies, Server, Security, Headers), automatic light/dark theme, proper 16/32/48/128 px icons |
 
 All previous DOM/script detections are kept: CMS, JS frameworks, libraries, CSS frameworks, analytics, tag managers, ads, CDN, PaaS, static site generators, PWA, fonts.
+
+### How the PHP version is found (2.1)
+Most sites **hide** the PHP version (`expose_php = Off`, or a proxy/CDN strips `X-Powered-By`). The extension therefore searches in layers and always reports **source** and **confidence**:
+
+| Layer | Technique | Confidence |
+|---|---|---|
+| 1 · automatic | `X-Powered-By` on PHP-generated responses: cache-busted URL to bypass the CDN, `/index.php`, a non-existent `.php` script (with nginx + PHP-FPM the "File not found." page is produced by PHP), CMS endpoints (`wp-login.php`, `xmlrpc.php`, `/user/login`…) | certain |
+| 2 · on demand | **🔎 Deep search** button: forgotten `phpinfo()` pages, exposed Composer files (`composer.lock`, `vendor/composer/platform_check.php`), PHP < 5.5 easter egg | certain / probable / minimum |
+| 3 · estimate | Distribution Apache/nginx package → default PHP (e.g. `Apache/2.4.52 (Ubuntu)` = Ubuntu 22.04 = PHP 8.1) | estimate |
+| 4 · minimum | CMS/framework requirement (e.g. Laravel 11 → PHP ≥ 8.2, Drupal 11 → PHP ≥ 8.3) | minimum |
+
+Estimates never raise "critical" CVE warnings as if they were certain. Deep search sends about 20 requests to the site: use it only on sites you own or are authorised to test.
 
 ### Installation
 1. `git clone https://github.com/umeglio/TechDetectorPro.git`
