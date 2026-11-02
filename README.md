@@ -1,179 +1,197 @@
-# Tech Detector Pro
-
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-2.2.0-green.svg)
-![Manifest](https://img.shields.io/badge/manifest-v3-orange.svg)
-![Chrome](https://img.shields.io/badge/Chrome%20%2F%20Edge-116%2B-brightgreen.svg)
-
 <p align="center"><img src="icons/icon128.png" alt="Tech Detector Pro" width="96"></p>
 
-**🇮🇹 [Italiano](#-italiano) · 🇬🇧 [English](#-english)**
+<h1 align="center">Tech Detector Pro</h1>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/version-2.2.1-green.svg" alt="Version">
+  <img src="https://img.shields.io/badge/manifest-v3-orange.svg" alt="Manifest V3">
+  <img src="https://img.shields.io/badge/Chrome%20%2F%20Edge-116%2B-brightgreen.svg" alt="Chrome / Edge 116+">
+  <img src="https://img.shields.io/badge/dipendenze-zero-blue.svg" alt="Zero dependencies">
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT">
+</p>
+
+<p align="center"><b>🇮🇹 <a href="#-italiano">Italiano</a> · 🇬🇧 <a href="#-english">English</a></b></p>
+
+<p align="center">
+  <img src="screenshots/tech-tab.png" alt="Tecnologie" width="200">
+  <img src="screenshots/server-tab.png" alt="Server" width="200">
+  <img src="screenshots/security-tab.png" alt="Sicurezza" width="200">
+  <img src="screenshots/headers-tab.png" alt="Header" width="200">
+</p>
 
 ---
 
 ## 🇮🇹 Italiano
 
-Estensione per Chrome/Edge che analizza il sito aperto e mostra **quali tecnologie usa, quale software gira sul server (con versione), come è configurato e quali componenti sono obsoleti o esposti a CVE note**. Tutta l'analisi avviene nel browser: nessun dato viene inviato a terzi.
+**Tech Detector Pro** è un'estensione per Chrome ed Edge che, con un clic, dice **con che cosa è costruito un sito, quale software gira sul server e con quale versione, quanto è configurato bene e quali componenti vanno aggiornati** perché fuori supporto o esposti a CVE note.
 
-### Screenshot
-<p align="center">
-  <img src="screenshots/tech-tab.png" alt="Tecnologie / Technologies" width="230">
-  <img src="screenshots/server-tab.png" alt="Server" width="230">
-  <img src="screenshots/security-tab.png" alt="Sicurezza / Security" width="230">
-  <img src="screenshots/headers-tab.png" alt="Header / Headers" width="230">
-</p>
+Tutto avviene nel browser: nessun dato viene inviato a servizi esterni. Il progetto non ha dipendenze: JavaScript puro per l'estensione, shell POSIX/bash per gli strumenti.
 
-### Novità della versione 2.0
-| Area | Cosa fa |
+### Cosa mostra
+
+| Scheda | Contenuto |
 |---|---|
-| **Header HTTP** | Un service worker cattura gli header della risposta principale: `Server`, `X-Powered-By`, `X-AspNet-Version`, `Via`, cookie, cache… |
-| **Versioni backend** | Legge versione di **Apache, nginx, IIS, LiteSpeed, Tomcat, PHP, OpenSSL, ASP.NET**, moduli Apache e sistema operativo dichiarato nel banner |
-| **Server** | IP del server, stato HTTP, protocollo (HTTP/1.1, HTTP/2, HTTP/3), compressione, cache/CDN, TTFB, tempi di caricamento, charset, doctype, cookie |
-| **Versioni frontend** | Versioni reali lette dalle variabili globali: jQuery, jQuery UI, Bootstrap, AngularJS/Angular, React, Vue, Next.js, Lodash, Moment, Handlebars, DOMPurify, Axios, TinyMCE, CKEditor, WordPress… |
-| **Sicurezza** | Voto A–F sugli header (HSTS, CSP, X-Content-Type-Options, clickjacking, Referrer-Policy, Permissions-Policy, COOP, CORS), flag dei cookie, contenuti misti, SRI, banner che rivelano versioni |
-| **CVE / EOL** | Base dati locale che segnala componenti fuori supporto o con CVE note, con link al NIST NVD |
-| **Export** | Report JSON scaricabile o testo copiato negli appunti |
-| **UI** | Quattro schede (Tecnologie, Server, Sicurezza, Header), tema chiaro/scuro automatico, icone corrette 16/32/48/128 px |
+| **Tecnologie** | CMS, framework e librerie JavaScript con la **versione reale** (jQuery, React, Vue, Angular/AngularJS, Next.js, Bootstrap, Lodash, WordPress…), CSS framework, analytics, tag manager, advertising, CDN, hosting, server e sistema operativo. Le tecnologie da aggiornare sono marcate con *⚠ da aggiornare* |
+| **Server** | IP, stato HTTP, protocollo (HTTP/1.1, 2, 3), software e versione di **Apache, nginx, IIS, LiteSpeed, Tomcat, PHP, OpenSSL, ASP.NET**, distribuzione Linux stimata, cache e CDN, compressione, tempi di risposta, cookie e **versione di PHP** (vedi sotto) |
+| **Sicurezza** | Componenti obsoleti o vulnerabili con gravità e link a NIST NVD, voto **A–F** sugli header (HSTS, CSP, X-Content-Type-Options, clickjacking, Referrer-Policy, Permissions-Policy, COOP, CORS), flag dei cookie, contenuti misti, Subresource Integrity, banner che rivelano versioni |
+| **Header** | Tutti gli header HTTP della risposta |
 
-Restano attivi tutti i rilevamenti precedenti su DOM e script: CMS, framework JS, librerie, CSS framework, analytics, tag manager, advertising, CDN, PaaS, static site generator, PWA, font.
+Il report si esporta in **JSON** oppure si copia come testo negli appunti.
 
-### Come individua la versione di PHP (2.1)
-Nella maggior parte dei siti la versione di PHP **non è dichiarata** (`expose_php = Off`, oppure un proxy o CDN rimuove `X-Powered-By`). Per questo l'estensione la cerca a più livelli e indica sempre **fonte** e **affidabilità**:
+### Versione di PHP
+
+Quasi tutti i siti in produzione nascondono la versione di PHP (`expose_php = Off`, oppure un proxy o CDN toglie `X-Powered-By`). L'estensione la cerca in quattro modi e indica sempre **fonte** e **affidabilità**:
 
 | Livello | Tecnica | Affidabilità |
 |---|---|---|
-| 1 · automatico | `X-Powered-By` sulle risposte generate da PHP: URL con cache-buster per saltare la cache del CDN, `/index.php`, uno script `.php` inesistente (con nginx + PHP-FPM la pagina "File not found." la produce PHP), endpoint del CMS (`wp-login.php`, `xmlrpc.php`, `/user/login`…) | certa |
-| 2 · su richiesta | Pulsante **🔎 Ricerca approfondita**: pagine `phpinfo()` dimenticate (`info.php`, `phpinfo.php`, `test.php`…), file Composer esposti (`composer.lock`, `vendor/composer/platform_check.php`), easter egg dei PHP < 5.5 | certa / probabile / minimo |
+| 1 · automatico | `X-Powered-By` sulle risposte che PHP genera direttamente: pagina con cache-buster (salta la cache del CDN), `/index.php`, script `.php` inesistente (con nginx + PHP-FPM la pagina "File not found." la produce PHP), pagine tipiche del CMS | certa |
+| 2 · su richiesta | Pulsante **🔎 Ricerca approfondita**: pagine `phpinfo()` dimenticate, file di Composer esposti, easter egg dei PHP < 5.5 | certa / probabile / minimo |
 | 3 · stima | Pacchetto Apache/nginx della distribuzione → PHP di default (es. `Apache/2.4.52 (Ubuntu)` = Ubuntu 22.04 = PHP 8.1) | stima |
-| 4 · minimo | Requisito del CMS/framework (es. Laravel 11 → PHP ≥ 8.2, Drupal 11 → PHP ≥ 8.3) | minimo |
+| 4 · minimo | Requisito del CMS o framework (es. Laravel 11 → PHP ≥ 8.2) | minimo |
 
-Se il sito è chiaramente costruito su un altro backend (Next.js/Nuxt → Node.js, ASP.NET, Java, Django, Rails, siti statici) l'estensione mostra **"PHP non utilizzato"** con il backend reale, invece di cercare una versione che non esiste.
+Se il sito usa chiaramente un altro backend (Next.js → Node.js, ASP.NET, Java, Django, Rails, siti statici) compare **"PHP non utilizzato"** con il backend reale.
 
-Le stime non producono avvisi CVE "critici" come se fossero certe. La ricerca approfondita fa circa 20 richieste al sito: usala su siti tuoi o per cui hai l'autorizzazione.
+<p align="center"><img src="screenshots/php-detection.png" alt="Versione PHP" width="330"> <img src="screenshots/non-php-backend.png" alt="Backend non PHP" width="330"></p>
 
-<p align="center"><img src="screenshots/php-detection.png" alt="Versione PHP" width="360"></p>
+### Come evita i falsi positivi
 
-### Strumenti a riga di comando per CSIRT e sistemisti (2.2)
-L'estensione vede solo ciò che il server **espone**. Per riscontrare una segnalazione (es. CSIRT Italia/ACN) servono anche verifiche sul server: in `tools/` ci sono due script bash.
+- Una tecnologia viene riconosciuta solo da **prove tecniche**: header, cookie, script caricati, oggetti JavaScript, marcatori specifici. La semplice comparsa di una parola nel testo della pagina non basta.
+- **Database, cache, linguaggi e web server** non sono visibili dal browser. Se risultano solo dal testo (per esempio una dashboard che elenca "Redis" tra i servizi monitorati) vengono **scartati**.
+- **PWA** richiede manifest **e** service worker attivo; **Firebase** richiede il vero SDK.
+- Per i siti che rispondono 200 a qualsiasi indirizzo (applicazioni a pagina singola, router applicativi) una richiesta di controllo evita di scambiarli per siti PHP.
+- Le versioni **stimate** non generano avvisi "critici" come se fossero certe.
 
-| Script | Dove si usa | Cosa fa |
+### Strumenti a riga di comando (`tools/`)
+
+L'estensione vede solo ciò che il server **espone**. Per riscontrare una segnalazione, per esempio di CSIRT Italia/ACN, servono anche verifiche sul server:
+
+| Script | Dove | Cosa fa |
 |---|---|---|
-| `tools/php-exposure-scan.sh` | dalla tua postazione, verso i siti | 3 richieste per sito: legge `Server`/`X-Powered-By`, rileva PHP anche con versione nascosta (cookie `PHPSESSID`) e confronta con le soglie PHP2Shell |
-| `tools/php-vuln-check.sh` | **sul server**, in sola lettura | trova tutte le installazioni PHP (CLI, FPM, CGI, LiteSpeed, Remi, Plesk, cPanel, Bitnami, container Docker), cerca i **backport** delle CVE nei changelog dei pacchetti Debian/Ubuntu/RHEL e controlla `session.upload_progress.enabled`, `post_max_size`, `max_input_nesting_level`, `expose_php`, `session.serialize_handler`, `memory_limit`, `pm.max_requests` |
+| `php-exposure-scan.sh` | dalla tua postazione | 3 richieste per sito: versione PHP esposta, PHP con versione nascosta, confronto con le soglie di sicurezza |
+| `php-vuln-check.sh` | **sul server**, sola lettura | trova tutte le installazioni PHP (CLI, FPM, CGI, LiteSpeed, Remi, Plesk, cPanel, Bitnami, Docker), riconosce i **backport** delle distribuzioni dai changelog dei pacchetti, controlla i parametri `php.ini` e dei pool FPM. Exit code 1 se serve intervenire, `--csv` per l'inventario |
+| `build-icons.sh` | sviluppo | rigenera le icone PNG da `icons/icon.svg` (rsvg-convert, Inkscape o ImageMagick) |
+| `build-zip.sh` | sviluppo | crea in `dist/` lo zip da pubblicare su Chrome Web Store / Edge Add-ons |
 
 ```bash
 ./tools/php-exposure-scan.sh -f siti.txt
-sudo ./tools/php-vuln-check.sh          # report leggibile, exit 1 se serve intervenire
-sudo ./tools/php-vuln-check.sh --csv    # una riga per binario, per l'inventario
+sudo ./tools/php-vuln-check.sh
+sudo ./tools/php-vuln-check.sh --csv > inventario.csv
 ```
 
-**PHP2Shell (avviso ACN AL07/261021/CSIRT-ITA):** CVE-2026-109618 e CVE-2026-109619 sono corrette in **8.2.35, 8.3.36, 8.4.27, 8.5.12**; per 7.4/8.0/8.1 esistono solo backport minimi in sorgente o patch delle distribuzioni. **CVE-2026-115560 non è corretta da nessuna release**: va mitigata con `session.upload_progress.enabled = 0` in `php.ini` o nel pool FPM (non con `ini_set()` o `.user.ini`), riavviando i worker.
+> **PHP2Shell (avviso ACN AL07/261021/CSIRT-ITA).** CVE-2026-109618 e CVE-2026-109619 sono corrette in **8.2.35, 8.3.36, 8.4.27 e 8.5.12**. Per 7.4, 8.0 e 8.1 esistono solo backport minimi in sorgente o patch delle distribuzioni. **CVE-2026-115560 non è corretta da nessuna release**: va mitigata con `session.upload_progress.enabled = 0` in `php.ini` o nel pool FPM (non con `ini_set()` o `.user.ini`), riavviando i worker.
 
 ### Installazione
-1. `git clone https://github.com/umeglio/TechDetectorPro.git`
+
+1. Scarica il repository: `git clone https://github.com/umeglio/TechDetectorPro.git`, oppure *Code → Download ZIP*
 2. Apri `chrome://extensions` (o `edge://extensions`) e attiva la **Modalità sviluppatore**
-3. **Carica estensione non pacchettizzata** e seleziona la cartella del repository
-4. Ricarica le schede già aperte: gli header vengono catturati durante la navigazione
+3. Clicca **Carica estensione non pacchettizzata** e seleziona la cartella del progetto
+4. Ricarica le schede già aperte: gli header vengono letti durante la navigazione
 
-### Utilizzo
-Apri un sito e clicca sull'icona. Il badge rosso sulla scheda **Sicurezza** indica quanti componenti vanno aggiornati; nella scheda **Tecnologie** sono marcati con *⚠ da aggiornare*.
+### Permessi
 
-### Permessi richiesti
-| Permesso | Motivo |
+| Permesso | Perché |
 |---|---|
-| `activeTab`, `scripting` | Analisi del DOM della scheda attiva |
-| `webRequest` | Lettura (solo osservazione) degli header della risposta principale |
-| `storage` | Memoria di sessione degli header per scheda (cancellata alla chiusura) |
-| `http://*/*`, `https://*/*` | Necessario per leggere header e IP di qualsiasi sito |
+| `activeTab`, `scripting` | analizzare la pagina della scheda attiva |
+| `webRequest` | leggere (solo osservazione) gli header della risposta principale |
+| `storage` | conservare gli header per scheda durante la sessione; vengono cancellati alla chiusura della scheda |
+| `http://*/*`, `https://*/*` | leggere header e IP di qualsiasi sito analizzato |
 
 ### Limiti
-- Si vede solo ciò che il server dichiara: se `Server` o `X-Powered-By` sono nascosti, la versione non è rilevabile.
-- Le distribuzioni Linux (Debian, Ubuntu, RHEL) applicano **backport** delle patch senza cambiare il numero di versione: un avviso CVE è un indizio da verificare sul server, non una prova.
-- Il database CVE è statico (aggiornato a novembre 2026) e va mantenuto in `analyzer.js` → `VULN_RULES`.
 
-### Struttura
+- Si vede solo ciò che il server rivela: con header `Server` e `X-Powered-By` nascosti la versione non è rilevabile da fuori.
+- Debian, Ubuntu e RHEL correggono le vulnerabilità **senza cambiare il numero di versione**: un avviso dell'estensione va confermato sul server con `php-vuln-check.sh`.
+- Le regole CVE sono locali (aggiornate a novembre 2026) e si trovano in `analyzer.js` → `VULN_RULES`.
+- La ricerca approfondita e gli script inviano richieste ai siti: usali su sistemi tuoi o per cui hai l'autorizzazione.
+
+### Struttura del progetto
+
 ```
-├── manifest.json   configurazione MV3
-├── background.js   service worker: cattura header, IP e stato HTTP
-├── detector.js     rilevamento tecnologie da DOM/script (eseguito nella pagina)
-├── pageinfo.js     versioni librerie, performance, cookie, SRI (eseguito nella pagina)
-├── analyzer.js     analisi header, audit sicurezza, regole CVE/EOL
-├── phpprobe.js     individuazione della versione PHP (4 livelli)
-├── tools/          script bash: scansione remota e verifica PHP sul server
-├── popup.html/css/js  interfaccia
-└── icons/          16, 32, 48, 128 px
+├── manifest.json        configurazione Manifest V3
+├── background.js        service worker: header, IP e stato HTTP della pagina
+├── detector.js          riconoscimento tecnologie dalla pagina
+├── pageinfo.js          versioni delle librerie, prestazioni, cookie, SRI
+├── analyzer.js          analisi header, voto di sicurezza, regole CVE/EOL
+├── phpprobe.js          individuazione della versione PHP
+├── popup.html/.css/.js  interfaccia
+├── icons/               icon.svg (sorgente) e PNG 16/32/48/128
+├── screenshots/         immagini del README
+└── tools/               script shell (verifiche PHP, icone, pacchetto zip)
 ```
 
 ### Contribuire
-Le pull request sono benvenute, in particolare per nuove regole in `VULN_RULES` (indicare sempre fonte e CVE).
+
+Le pull request sono benvenute, in particolare per nuove regole in `VULN_RULES`: indica sempre la fonte e le CVE. Lo storico delle versioni è in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
 ## 🇬🇧 English
 
-A Chrome/Edge extension that inspects the current website and shows **which technologies it uses, which server software (and version) runs behind it, how it is configured and which components are outdated or affected by known CVEs**. Everything runs locally in the browser; no data is sent anywhere.
+**Tech Detector Pro** is a Chrome and Edge extension that tells you, in one click, **what a website is built with, which server software and version it runs, how well it is configured, and which components need updating** because they are end-of-life or affected by known CVEs.
 
-### Screenshots
-<p align="center">
-  <img src="screenshots/tech-tab.png" alt="Tecnologie / Technologies" width="230">
-  <img src="screenshots/server-tab.png" alt="Server" width="230">
-  <img src="screenshots/security-tab.png" alt="Sicurezza / Security" width="230">
-  <img src="screenshots/headers-tab.png" alt="Header / Headers" width="230">
-</p>
+Everything runs in the browser and no data is sent anywhere. The project has no dependencies: plain JavaScript for the extension, POSIX shell/bash for the tools.
 
-### What's new in 2.0
-| Area | What it does |
+### What it shows
+
+| Tab | Content |
 |---|---|
-| **HTTP headers** | A service worker captures the main document response headers: `Server`, `X-Powered-By`, `X-AspNet-Version`, `Via`, cookies, cache… |
-| **Backend versions** | Detects **Apache, nginx, IIS, LiteSpeed, Tomcat, PHP, OpenSSL, ASP.NET** versions, Apache modules and the OS advertised in the banner |
-| **Server** | Server IP, HTTP status, protocol (HTTP/1.1, HTTP/2, HTTP/3), compression, cache/CDN, TTFB, load time, charset, doctype, cookies |
-| **Frontend versions** | Real versions read from globals: jQuery, jQuery UI, Bootstrap, AngularJS/Angular, React, Vue, Next.js, Lodash, Moment, Handlebars, DOMPurify, Axios, TinyMCE, CKEditor, WordPress… |
-| **Security** | A–F grade on headers (HSTS, CSP, X-Content-Type-Options, clickjacking, Referrer-Policy, Permissions-Policy, COOP, CORS), cookie flags, mixed content, SRI, version-leaking banners |
-| **CVE / EOL** | Local rule set that flags end-of-life components or versions with known CVEs, linking to NIST NVD |
-| **Export** | Downloadable JSON report or plain-text copy to clipboard |
-| **UI** | Four tabs (Technologies, Server, Security, Headers), automatic light/dark theme, proper 16/32/48/128 px icons |
+| **Technologies** | CMS, JavaScript frameworks and libraries with their **real version** (jQuery, React, Vue, Angular/AngularJS, Next.js, Bootstrap, Lodash, WordPress…), CSS frameworks, analytics, tag managers, ads, CDN, hosting, server and operating system. Components to update are flagged *⚠ da aggiornare* |
+| **Server** | IP, HTTP status, protocol (HTTP/1.1, 2, 3), software and version of **Apache, nginx, IIS, LiteSpeed, Tomcat, PHP, OpenSSL, ASP.NET**, estimated Linux distribution, cache/CDN, compression, timings, cookies and the **PHP version** |
+| **Security** | Outdated or vulnerable components with severity and NIST NVD links, **A–F grade** on security headers, cookie flags, mixed content, Subresource Integrity, version-leaking banners |
+| **Headers** | All HTTP response headers |
 
-All previous DOM/script detections are kept: CMS, JS frameworks, libraries, CSS frameworks, analytics, tag managers, ads, CDN, PaaS, static site generators, PWA, fonts.
+Reports can be exported as **JSON** or copied as text. The interface is in Italian.
 
-### How the PHP version is found (2.1)
-Most sites **hide** the PHP version (`expose_php = Off`, or a proxy/CDN strips `X-Powered-By`). The extension therefore searches in layers and always reports **source** and **confidence**:
+### PHP version
 
-| Layer | Technique | Confidence |
+Most production sites hide the PHP version. The extension searches in four layers and always reports **source** and **confidence**:
+1. `X-Powered-By` on PHP-generated responses: cache-busted page, `/index.php`, a non-existent `.php` script, CMS endpoints (certain).
+2. On-demand **deep search**: forgotten `phpinfo()` pages, exposed Composer files, the PHP < 5.5 easter egg.
+3. Estimate from the distribution package, e.g. `Apache/2.4.52 (Ubuntu)` → Ubuntu 22.04 → PHP 8.1.
+4. Minimum required by the detected CMS or framework.
+
+Sites clearly running another backend (Next.js → Node.js, ASP.NET, Java, Django, Rails, static sites) show **"PHP non utilizzato"** (PHP not used).
+
+### Avoiding false positives
+
+- Technologies are recognised only from **technical evidence** (headers, cookies, loaded scripts, JavaScript globals, specific markers), never from a word in the page text.
+- **Databases, caches, languages and web servers** are invisible to a browser. Text-only matches are **discarded**.
+- **PWA** needs a manifest **and** an active service worker; **Firebase** needs the real SDK.
+- A control request detects catch-all sites that answer 200 to any URL, so they are not mistaken for PHP.
+- **Estimated** versions never raise "critical" CVE warnings.
+
+### Command-line tools (`tools/`)
+
+| Script | Where | What it does |
 |---|---|---|
-| 1 · automatic | `X-Powered-By` on PHP-generated responses: cache-busted URL to bypass the CDN, `/index.php`, a non-existent `.php` script (with nginx + PHP-FPM the "File not found." page is produced by PHP), CMS endpoints (`wp-login.php`, `xmlrpc.php`, `/user/login`…) | certain |
-| 2 · on demand | **🔎 Deep search** button: forgotten `phpinfo()` pages, exposed Composer files (`composer.lock`, `vendor/composer/platform_check.php`), PHP < 5.5 easter egg | certain / probable / minimum |
-| 3 · estimate | Distribution Apache/nginx package → default PHP (e.g. `Apache/2.4.52 (Ubuntu)` = Ubuntu 22.04 = PHP 8.1) | estimate |
-| 4 · minimum | CMS/framework requirement (e.g. Laravel 11 → PHP ≥ 8.2, Drupal 11 → PHP ≥ 8.3) | minimum |
+| `php-exposure-scan.sh` | your workstation | 3 requests per site: exposed PHP version, hidden PHP, comparison with security thresholds |
+| `php-vuln-check.sh` | **on the server**, read-only | finds every PHP install (CLI, FPM, CGI, LiteSpeed, Remi, Plesk, cPanel, Bitnami, Docker), detects distribution **backports** in package changelogs, checks `php.ini` and FPM pool settings; exit code 1 when action is needed, `--csv` for inventories |
+| `build-icons.sh` | development | rebuilds PNG icons from `icons/icon.svg` (rsvg-convert, Inkscape or ImageMagick) |
+| `build-zip.sh` | development | creates the store-ready zip in `dist/` |
 
-If the site clearly runs on another backend (Next.js/Nuxt → Node.js, ASP.NET, Java, Django, Rails, static sites) the extension shows **"PHP not used"** with the real backend instead of searching for a version that does not exist.
-
-Estimates never raise "critical" CVE warnings as if they were certain. Deep search sends about 20 requests to the site: use it only on sites you own or are authorised to test.
-
-### Command-line tools for CSIRTs and sysadmins (2.2)
-The extension only sees what the server **discloses**. `tools/` contains two bash scripts: `php-exposure-scan.sh` (remote, 3 requests per site, compares exposed PHP versions with the PHP2Shell thresholds) and `php-vuln-check.sh` (run **on the server**, read-only: finds every PHP install including FPM/Remi/Plesk/cPanel/Docker, detects distribution **backports** in package changelogs and checks the relevant `php.ini` settings).
-
-PHP2Shell: CVE-2026-109618/109619 are fixed in **8.2.35, 8.3.36, 8.4.27, 8.5.12**; **CVE-2026-115560 has no fix yet** and must be mitigated with `session.upload_progress.enabled = 0` (php.ini or FPM pool, then restart workers).
+> **PHP2Shell (ACN advisory AL07/261021/CSIRT-ITA).** CVE-2026-109618 and CVE-2026-109619 are fixed in **8.2.35, 8.3.36, 8.4.27 and 8.5.12**. 7.4/8.0/8.1 only have minimal source backports or distribution patches. **CVE-2026-115560 has no fix yet**: set `session.upload_progress.enabled = 0` in `php.ini` or the FPM pool, then restart the workers.
 
 ### Installation
-1. `git clone https://github.com/umeglio/TechDetectorPro.git`
+
+1. `git clone https://github.com/umeglio/TechDetectorPro.git` (or *Code → Download ZIP*)
 2. Open `chrome://extensions` (or `edge://extensions`) and enable **Developer mode**
-3. Click **Load unpacked** and select the repository folder
-4. Reload already-open tabs: headers are captured during navigation
+3. Click **Load unpacked** and select the project folder
+4. Reload tabs that were already open
 
 ### Permissions
-| Permission | Why |
-|---|---|
-| `activeTab`, `scripting` | Inspect the active tab's DOM |
-| `webRequest` | Observe (read-only) main document response headers |
-| `storage` | Per-tab session storage of headers (cleared when the tab closes) |
-| `http://*/*`, `https://*/*` | Required to read headers and IP for any site |
+
+`activeTab` and `scripting` to inspect the active page; `webRequest` to observe (read-only) the main response headers; `storage` for per-tab session data, cleared when the tab closes; `http://*/*` and `https://*/*` to read headers and IP of any analysed site.
 
 ### Limitations
-- Only what the server discloses can be detected: hidden `Server`/`X-Powered-By` means no version.
-- Linux distributions **backport** security fixes without bumping the version string: a CVE warning is a lead to verify on the server, not proof.
-- The CVE rule set is static (updated November 2026) and lives in `analyzer.js` → `VULN_RULES`.
+
+- Only what the server discloses can be detected.
+- Distributions backport fixes without changing the version string: confirm warnings on the server with `php-vuln-check.sh`.
+- CVE rules are local (updated November 2026) and live in `analyzer.js` → `VULN_RULES`.
+- Deep search and the scripts send requests to the target: use them only on systems you own or are authorised to test.
 
 ### License
-MIT — see [LICENSE](LICENSE).
 
-**Author:** Umberto Meglio · built with the support of Claude by Anthropic
+MIT, see [LICENSE](LICENSE). Version history: [CHANGELOG.md](CHANGELOG.md).
+
+---
+
+<p align="center"><b>Autore / Author:</b> Umberto Meglio · realizzato con il supporto di Claude di Anthropic</p>
