@@ -3,7 +3,7 @@
 <h1 align="center">Tech Detector Pro</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.3.0-green.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-2.3.1-green.svg" alt="Version">
   <img src="https://img.shields.io/badge/manifest-v3-orange.svg" alt="Manifest V3">
   <img src="https://img.shields.io/badge/Chrome%20%2F%20Edge-116%2B-brightgreen.svg" alt="Chrome / Edge 116+">
   <img src="https://img.shields.io/badge/lingue%20%2F%20languages-12-3df5b0.svg" alt="12 languages">

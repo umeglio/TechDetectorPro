@@ -2,6 +2,11 @@
 
 Autore: Umberto Meglio · realizzato con il supporto di Claude di Anthropic
 
+## 2.3.1
+- Leggibilità del popup: miraFONT resta per titolo, schede, intestazioni ed etichette di gravità; testi lunghi, numeri e codici CVE usano caratteri di sistema pensati per la lettura a piccole dimensioni.
+- Badge numerici (es. il conteggio sulla scheda Sicurezza) centrati con flexbox, indipendenti dalle metriche verticali del font.
+- Screenshot rigenerati.
+
 ## 2.3.0
 - **12 lingue**: English, 中文, हिन्दी, Español, Français, العربية, বাংলা, Português, Русский, 日本語, Deutsch, Italiano. La lingua segue quella del browser e si cambia dal menu del popup; l'arabo è visualizzato da destra a sinistra. Tradotti anche i controlli di sicurezza, gli avvisi CVE e la ricerca della versione PHP.
 - Nome e descrizione dell'estensione tradotti (`_locales/`) per Chrome Web Store ed Edge Add-ons.
