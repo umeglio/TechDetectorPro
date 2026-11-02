@@ -1665,9 +1665,9 @@ function detectTechnologies() {
     }
     
     // Google Publisher Tag
-    if (window.googletag ||
-        document.querySelector('script[src*="googletagservices.com"]') ||
-        htmlContent.includes('googletag')) {
+    // "googletag" è contenuto in "googletagmanager": serve la libreria GPT vera
+    if ((window.googletag && typeof window.googletag.defineSlot === 'function') ||
+        document.querySelector('script[src*="googletagservices.com/tag/js/gpt"], script[src*="securepubads.g.doubleclick.net/tag/js/gpt"]')) {
       technologies.push({
         name: 'Google Publisher Tag',
         type: 'Ad Network',

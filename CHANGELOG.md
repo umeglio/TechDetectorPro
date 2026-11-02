@@ -8,6 +8,8 @@ Autore: Umberto Meglio · realizzato con il supporto di Claude di Anthropic
 - Richiesta di controllo per i siti catch-all, che non vengono più scambiati per siti PHP.
 - Icona sorgente `icons/icon.svg` e script `tools/build-icons.sh` e `tools/build-zip.sh`: nessuna dipendenza da Python.
 - README riscritto in italiano e inglese, organizzato per funzione.
+- Corretto Google Publisher Tag: "googletag" compare anche in "googletagmanager", quindi ogni sito con Tag Manager risultava avere GPT.
+- Screenshot rigenerati con la versione 2.2.1.
 
 ## 2.2.0
 - Regole di rilevamento basate su prove tecniche: PWA (manifest + service worker attivo), Firebase (SDK reale), Google Analytics (ID reali), Integral Ad Science, Open Graph, Webpack, Next.js.
